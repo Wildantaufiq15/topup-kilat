@@ -1,8 +1,8 @@
 # 📊 Progress Report - Topup Kilat
 
-**Tanggal:** 5 Juli 2026
-**Status:** DEPLOYMENT PHASE - Mempersiapkan deployment
-**Versi:** 2.0.0
+**Tanggal:** 6 Juli 2026
+**Status:** DEPLOY PHASE - Backend Deployed, Environment Variables Setup
+**Versi:** 2.0.1
 
 ---
 
@@ -126,18 +126,16 @@ apps/api/
 
 ---
 
-## 🚀 DEPLOY Phase - Sedang Berlangsung
+## 🚀 DEPLOY Phase - Progress
 
-### Target Deployment
-Website perlu di-deploy sebelum bisa verifikasi ke Digiflazz (requirement dari admin Digiflazz via Telegram).
+### Deployment Status
 
-### Rencana Deployment
-
-| Komponen | Provider | Estimasi | Status |
-|----------|----------|----------|--------|
-| **Frontend** (Next.js) | Vercel | ~15 menit | ⏳ Pending |
-| **Database** (PostgreSQL) | Neon / Supabase | ~10 menit | ⏳ Pending |
-| **Backend** (NestJS) | Railway / Render | ~30 menit | ⏳ Pending |
+| Komponen | Provider | Status | URL/Notes |
+|----------|----------|--------|-----------|
+| **Database** | Neon PostgreSQL | ✅ Ready | Project created, connection string ready |
+| **Backend** | Railway | ✅ Deployed | `https://topup-kilat-production.up.railway.app` |
+| **Frontend** | Vercel | ⏳ Pending | Belum di-deploy |
+| **Environment Vars** | Railway | 🔄 In Progress | DATABASE_URL & JWT_SECRET sudah, perlu tambah FRONTEND_URL & NODE_ENV |
 
 ### External Services Setup
 
@@ -150,6 +148,21 @@ Website perlu di-deploy sebelum bisa verifikasi ke Digiflazz (requirement dari a
 | Provider | Status | Notes |
 |----------|--------|-------|
 | **Digiflazz** | ⏳ Tunggu Deploy | Admin minta deploy dulu sebelum verifikasi via Telegram |
+
+### Deployment Checklist
+
+- [x] Buat project Neon PostgreSQL
+- [x] Setup Railway deployment configuration
+- [x] Deploy backend ke Railway
+- [x] Konfigurasi DATABASE_URL di Railway
+- [x] Konfigurasi JWT_SECRET di Railway
+- [ ] Konfigurasi FRONTEND_URL di Railway (`*`)
+- [ ] Konfigurasi NODE_ENV di Railway (`production`)
+- [ ] Redeploy backend untuk apply env vars
+- [ ] Run `prisma migrate deploy` di Railway
+- [ ] Deploy frontend ke Vercel
+- [ ] Setup webhook Sakurupiah
+- [ ] Verifikasi ke Digiflazz via Telegram
 
 ---
 
@@ -175,57 +188,26 @@ Website perlu di-deploy sebelum bisa verifikasi ke Digiflazz (requirement dari a
 ```
 topup-kilat/
 ├── apps/
-│   ├── api/                 # NestJS Backend
-│   │   ├── prisma/
-│   │   │   ├── schema.prisma
-│   │   │   └── seed.ts
-│   │   └── src/
-│   │       ├── main.ts
-│   │       ├── app.module.ts
-│   │       ├── modules/
-│   │       │   ├── auth/
-│   │       │   ├── users/
-│   │       │   ├── games/
-│   │       │   ├── products/
-│   │       │   ├── orders/
-│   │       │   ├── payments/
-│   │       │   ├── vouchers/
-│   │       │   ├── promos/
-│   │       │   ├── notifications/
-│   │       │   └── admin/
-│   │       └── common/
-│   └── web/                 # Next.js Frontend (future)
-├── src/                     # Next.js Frontend (current)
-│   ├── app/
-│   │   ├── components/
-│   │   ├── data/
-│   │   ├── games/
-│   │   ├── topup/
-│   │   ├── checkout/
-│   │   ├── login/
-│   │   ├── register/
-│   │   ├── promo/
-│   │   ├── bantuan/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   └── globals.css
-│   ├── components/
-│   │   ├── ui/
-│   │   ├── game/
-│   │   └── layout/
-│   ├── context/
-│   ├── lib/
-│   │   ├── utils.ts
-│   │   └── api.ts          # NEW: API Client
-│   └── types/
-├── public/
-│   └── placeholder/
+│   └── api/                 # NestJS Backend
+│       ├── Railway.toml     # Railway deployment config
+│       ├── Dockerfile       # Docker production image
+│       ├── prisma/
+│       │   ├── schema.prisma
+│       │   └── seed.ts
+│       └── src/
+│           ├── main.ts
+│           ├── app.module.ts
+│           └── modules/...
+├── src/                     # Next.js Frontend
+│   ├── app/...
+│   ├── components/...
+│   └── lib/api.ts           # API Client
+├── Railway.toml             # Root Railway config (deprecated)
 ├── package.json
 ├── tsconfig.json
 ├── tailwind.config.ts
 ├── next.config.ts
-├── .env.example
-└── README.md
+└── .env.example
 ```
 
 ---
@@ -234,53 +216,38 @@ topup-kilat/
 
 | Metric | Value |
 |--------|-------|
-| Total Files | ~70 files |
+| Total Files | ~120 files |
 | Frontend Pages | 8 pages |
 | Backend Modules | 10 modules |
 | API Endpoints | 30+ endpoints |
 | Database Tables | 15 tables |
-| Dependencies (API) | 25+ packages |
+| Git Commits | 5 commits |
+| Deployments | 1 (Railway Backend) |
 
 ---
 
-## 🚀 Cara Menjalankan
+## 🔗 Live URLs
 
-### Frontend (Next.js)
-```bash
-npm install
-npm run dev  # http://localhost:3000
-```
-
-### Backend (NestJS)
-```bash
-cd apps/api
-npm install
-cp .env.example .env  # Edit with your PostgreSQL credentials
-npx prisma generate
-npx prisma migrate dev --name init
-npx prisma db seed  # Seed data
-npm run start:dev  # http://localhost:4000
-```
-
-### Database
-- PostgreSQL 14+
-- Database name: `topupkilat`
+| Service | URL | Status |
+|---------|-----|--------|
+| Backend API | `https://topup-kilat-production.up.railway.app` | ✅ Running |
+| API Docs | `https://topup-kilat-production.up.railway.app/api/v1/docs` | ✅ Available |
+| Health Check | `https://topup-kilat-production.up.railway.app/health` | ✅ Available |
+| Frontend | *(belum deploy)* | ⏳ Pending |
 
 ---
 
 ## ⏳ Yang Belum Dibuat (Roadmap)
 
-### 🚀 DEPLOY Phase - CURRENT (NEXT)
-> **Wajib selesai sebelum verifikasi Digiflazz**
+### 🚀 DEPLOY Phase - CURRENT
+> **Lanjutkan dari sini**
 
-| Step | Deskripsi | Status |
-|------|-----------|--------|
-| 1 | Deploy Frontend ke Vercel | ⏳ Pending |
-| 2 | Setup PostgreSQL di Neon/Supabase | ⏳ Pending |
-| 3 | Deploy Backend ke Railway/Render | ⏳ Pending |
-| 4 | Konfigurasi environment variables | ⏳ Pending |
-| 5 | Setup webhook URLs untuk Sakurupiah | ⏳ Pending |
-| 6 | Verifikasi ke Digiflazz via Telegram | ⏳ Pending |
+#### Checklist Lanjutan:
+- [ ] Tambahkan `FRONTEND_URL = *` di Railway Variables
+- [ ] Tambahkan `NODE_ENV = production` di Railway Variables
+- [ ] Redeploy backend di Railway
+- [ ] Setup Prisma migration di Railway (via Start Command)
+- [ ] Deploy Frontend ke Vercel
 
 ### Fase 2.1 - Selesaikan Payment & Supplier Integration
 > **Setelah DEPLOY phase selesai**
@@ -319,7 +286,7 @@ npm run start:dev  # http://localhost:4000
 ## 🔧 Teknologi
 
 ### Frontend
-- Next.js 15 + React 19
+- Next.js 15.1.11 + React 19
 - TypeScript
 - Tailwind CSS
 - Framer Motion
@@ -327,9 +294,33 @@ npm run start:dev  # http://localhost:4000
 ### Backend
 - NestJS 10
 - Prisma ORM
-- PostgreSQL
+- PostgreSQL (Neon)
 - JWT Authentication
+
+### Deployment
+- Frontend: Vercel (pending)
+- Backend: Railway ✅
+- Database: Neon PostgreSQL ✅
 
 ---
 
-*Dokumen ini diupdate pada: 5 Juli 2026*
+## 📝 Catatan Sesi
+
+### 6 Juli 2026 - Deployment Session
+- Setup Railway deployment configuration
+- Fix Next.js security vulnerability (update to 15.1.11)
+- Fix build errors (exclude apps/api from Next.js)
+- Successfully deployed backend to Railway
+- Backend URL: `https://topup-kilat-production.up.railway.app`
+- Next: Setup remaining env vars, deploy frontend to Vercel
+
+### External Services Status
+- **Neon PostgreSQL**: ✅ Ready (butuh redeploy untuk apply env vars)
+- **Railway**: ✅ Backend deployed
+- **Sakurupiah**: ⏳ Menunggu verifikasi
+- **Digiflazz**: ⏳ Menunggu deploy selesai
+
+---
+
+*Dokumen ini diupdate pada: 6 Juli 2026*
+
