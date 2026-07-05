@@ -318,9 +318,53 @@ topup-kilat/
 
 ---
 
-## 🔄 Resume Project - Langkah Lanjutan
+## 🔄 Resume Project - Development Environment
 
-### Kalau mau lanjut besok:
+### Kalau laptop baru dinyalakan (Development):
+
+#### 1. Buka Project
+```bash
+cd E:\Website\TopupKilat
+```
+
+#### 2. Install Dependencies (jika perlu)
+```bash
+npm install
+cd apps/api && npm install && cd ..
+```
+*Biasanya tidak perlu kalau folder `node_modules` masih ada*
+
+#### 3. Jalankan Development Server
+```bash
+# Frontend (terminal 1)
+npm run dev
+
+# Backend (terminal 2)
+cd apps/api && npm run start:dev
+```
+
+#### 4. Cek Environment Variables Lokal
+Pastikan ada file `.env` di:
+- Root: `E:\Website\TopupKilat\.env`
+- Backend: `E:\Website\TopupKilat\apps\api\.env`
+
+Contoh isi `.env` lokal:
+```env
+# Frontend (root)
+NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
+
+# Backend (apps/api)
+DATABASE_URL="postgresql://postgres:password@localhost:5432/topupkilat"
+JWT_SECRET="your-jwt-secret"
+FRONTEND_URL="http://localhost:3000"
+PORT=4000
+```
+
+---
+
+## 🔄 Resume Project - Deployment (Production)
+
+### Kalau mau lanjut deployment:
 
 #### 1. Cek Status Deployment
 Buka browser, cek:
