@@ -306,7 +306,7 @@ topup-kilat/
 
 ## 📝 Catatan Sesi
 
-### 6 Juli 2026 - Deployment Session
+### 6 Juli 2026 - Deployment Session (Siang)
 - Setup Railway deployment configuration
 - Fix Next.js security vulnerability (update to 15.1.11)
 - Fix build errors (exclude apps/api from Next.js)
@@ -314,7 +314,65 @@ topup-kilat/
 - Backend URL: `https://topup-kilat-production.up.railway.app`
 - ✅ Added FRONTEND_URL and NODE_ENV environment variables
 - ✅ Redeployed backend with new environment variables
-- Next: Run Prisma migration, deploy frontend to Vercel
+- ⏸️ Session ended - laptop dimatikan
+
+---
+
+## 🔄 Resume Project - Langkah Lanjutan
+
+### Kalau mau lanjut besok:
+
+#### 1. Cek Status Deployment
+Buka browser, cek:
+- Backend: https://topup-kilat-production.up.railway.app/health
+- Railway Dashboard: https://railway.app
+
+#### 2. Database Migration (Jalankan di Railway)
+1. Buka Railway Dashboard
+2. Pergi ke **Settings** → **Start Command**
+3. Ubah isi jadi:
+   ```
+   cd apps/api && npx prisma migrate deploy && node dist/main
+   ```
+4. Klik **Save** atau redeploy
+
+#### 3. Deploy Frontend ke Vercel
+1. Buka https://vercel.com
+2. Login dengan GitHub
+3. Klik **"Add New"** → **"Project"**
+4. Pilih repository `topup-kilat`
+5. Vercel auto-detect Next.js
+6. Klik **"Deploy"**
+7. Setelah deploy, catat URL Vercel
+
+#### 4. Update Frontend API URL
+Setelah dapat URL Vercel, update di:
+- File `src/lib/api.ts` → ubah API_BASE_URL ke URL Railway
+- Commit & push
+- Vercel auto-redeploy
+
+#### 5. Test Koneksi
+- Buka URL Vercel
+- Test order flow
+- Cek apakah data dari API Railway muncul
+
+#### 6. Lanjut ke Verifikasi Digiflazz
+1. Chat admin Digiflazz via Telegram
+2. Beri link website (URL Vercel)
+3. Ikuti instruksi verifikasi
+4. Dapat API credentials Digiflazz
+
+---
+
+### Checklist Resume:
+
+- [ ] Cek health check Railway
+- [ ] Setup Start Command untuk Prisma migration
+- [ ] Redeploy backend
+- [ ] Deploy frontend ke Vercel
+- [ ] Update API URL di frontend
+- [ ] Test website
+- [ ] Verifikasi ke Digiflazz
 
 ### External Services Status
 - **Neon PostgreSQL**: ✅ Ready (butuh redeploy untuk apply env vars)
