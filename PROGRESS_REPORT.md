@@ -156,9 +156,9 @@ apps/api/
 - [x] Deploy backend ke Railway
 - [x] Konfigurasi DATABASE_URL di Railway
 - [x] Konfigurasi JWT_SECRET di Railway
-- [ ] Konfigurasi FRONTEND_URL di Railway (`*`)
-- [ ] Konfigurasi NODE_ENV di Railway (`production`)
-- [ ] Redeploy backend untuk apply env vars
+- [x] Konfigurasi FRONTEND_URL di Railway (`*`)
+- [x] Konfigurasi NODE_ENV di Railway (`production`)
+- [x] Redeploy backend untuk apply env vars
 - [ ] Run `prisma migrate deploy` di Railway
 - [ ] Deploy frontend ke Vercel
 - [ ] Setup webhook Sakurupiah
@@ -312,7 +312,9 @@ topup-kilat/
 - Fix build errors (exclude apps/api from Next.js)
 - Successfully deployed backend to Railway
 - Backend URL: `https://topup-kilat-production.up.railway.app`
-- Next: Setup remaining env vars, deploy frontend to Vercel
+- ✅ Added FRONTEND_URL and NODE_ENV environment variables
+- ✅ Redeployed backend with new environment variables
+- Next: Run Prisma migration, deploy frontend to Vercel
 
 ### External Services Status
 - **Neon PostgreSQL**: ✅ Ready (butuh redeploy untuk apply env vars)
