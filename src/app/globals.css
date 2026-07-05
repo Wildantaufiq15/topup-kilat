@@ -1,0 +1,345 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========================================
+   TOPUP KILAT - Global Styles
+   Gaming Dark Theme dengan aksen Neon
+   ======================================== */
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@layer base {
+  :root {
+    /* Gaming Color Palette */
+    --color-primary: 59 130 246;        /* Blue */
+    --color-accent-cyan: 0 240 255;    /* Neon Cyan */
+    --color-accent-purple: 168 85 247; /* Neon Purple */
+    --color-accent-pink: 236 72 153;   /* Neon Pink */
+
+    /* Background */
+    --color-bg-primary: 26 26 46;      /* #1a1a2e */
+    --color-bg-secondary: 22 33 62;    /* #16213e */
+    --color-bg-tertiary: 15 52 96;     /* #0f3460 */
+
+    /* Text */
+    --color-text-primary: 255 255 255;
+    --color-text-secondary: 156 163 175;
+    --color-text-muted: 107 114 128;
+  }
+
+  * {
+    @apply border-dark-50;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-dark-50 text-white font-sans antialiased;
+    background-image:
+      radial-gradient(ellipse at top, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(168, 85, 247, 0.1) 0%, transparent 50%);
+    min-height: 100vh;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-100;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-tertiary/50 rounded-full;
+    border: 2px solid transparent;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary-600;
+  }
+
+  /* Hide scrollbar utility */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer components {
+  /* ========================================
+     BUTTONS
+     ======================================== */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold
+           transition-all duration-300 ease-out cursor-pointer
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-gradient-to-r from-primary-600 to-primary-500 text-white
+           hover:from-primary-500 hover:to-primary-400
+           shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40
+           hover:scale-105 active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply btn bg-surface-secondary text-white border border-surface-tertiary
+           hover:bg-surface-tertiary hover:border-primary-500/50
+           hover:shadow-glow-primary;
+  }
+
+  .btn-accent {
+    @apply btn bg-gradient-to-r from-accent-purple to-accent-cyan text-white
+           hover:from-accent-cyan hover:to-accent-purple
+           shadow-lg shadow-accent-purple/25 hover:shadow-accent-cyan/40
+           hover:scale-105 active:scale-95;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-white/80 hover:bg-white/5 hover:text-white;
+  }
+
+  .btn-sm {
+    @apply px-4 py-2 text-sm;
+  }
+
+  .btn-lg {
+    @apply px-8 py-4 text-lg;
+  }
+
+  /* ========================================
+     CARDS
+     ======================================== */
+  .card {
+    @apply bg-surface-primary rounded-2xl border border-white/5
+           shadow-card transition-all duration-300;
+  }
+
+  .card-hover {
+    @apply card hover:shadow-card-hover hover:border-primary-500/30 hover:scale-[1.02];
+  }
+
+  .card-glow {
+    @apply card border border-accent-cyan/20 hover:border-accent-cyan/50
+           hover:shadow-glow-cyan transition-all duration-500;
+  }
+
+  /* ========================================
+     INPUT FIELDS
+     ======================================== */
+  .input {
+    @apply w-full px-4 py-3 bg-dark-100 border border-white/10 rounded-xl
+           text-white placeholder:text-white/40
+           focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20
+           transition-all duration-300;
+  }
+
+  .input-error {
+    @apply border-red-500 focus:border-red-500 focus:ring-red-500/20;
+  }
+
+  /* ========================================
+     BADGES
+     ======================================== */
+  .badge {
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-500/20 text-primary-400 border border-primary-500/30;
+  }
+
+  .badge-success {
+    @apply badge bg-green-500/20 text-green-400 border border-green-500/30;
+  }
+
+  .badge-warning {
+    @apply badge bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+  }
+
+  .badge-error {
+    @apply badge bg-red-500/20 text-red-400 border border-red-500/30;
+  }
+
+  .badge-glow {
+    @apply badge bg-accent-cyan/20 text-accent-cyan border border-accent-cyan/30
+           shadow-[0_0_10px_rgba(0,240,255,0.3)];
+  }
+
+  /* ========================================
+     GAME CARD
+     ======================================== */
+  .game-card {
+    @apply card-hover overflow-hidden group cursor-pointer;
+  }
+
+  .game-card-image {
+    @apply relative w-full aspect-square overflow-hidden rounded-xl;
+  }
+
+  .game-card-image img {
+    @apply w-full h-full object-cover transition-transform duration-500 group-hover:scale-110;
+  }
+
+  .game-card-overlay {
+    @apply absolute inset-0 bg-gradient-to-t from-dark-400/90 via-transparent to-transparent
+           opacity-0 group-hover:opacity-100 transition-opacity duration-300;
+  }
+
+  /* ========================================
+     PRICE/NOMINAL CARD
+     ======================================== */
+  .nominal-card {
+    @apply relative bg-dark-100 rounded-xl p-4 border-2 border-white/5
+           cursor-pointer transition-all duration-300
+           hover:border-primary-500/50 hover:bg-dark-100/80;
+  }
+
+  .nominal-card-selected {
+    @apply nominal-card border-primary-500 bg-primary-500/10 shadow-glow-primary;
+  }
+
+  /* ========================================
+     SKELETON LOADER
+     ======================================== */
+  .skeleton {
+    @apply bg-dark-100 animate-pulse rounded-lg;
+  }
+
+  .skeleton-text {
+    @apply h-4 skeleton;
+  }
+
+  .skeleton-title {
+    @apply h-6 skeleton w-3/4;
+  }
+
+  .skeleton-image {
+    @apply aspect-square skeleton rounded-xl;
+  }
+
+  /* ========================================
+     STEP INDICATOR
+     ======================================== */
+  .step-indicator {
+    @apply flex items-center gap-2;
+  }
+
+  .step-dot {
+    @apply w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
+           transition-all duration-300;
+  }
+
+  .step-dot-active {
+    @apply step-dot bg-primary-500 text-white shadow-glow-primary;
+  }
+
+  .step-dot-completed {
+    @apply step-dot bg-green-500 text-white;
+  }
+
+  .step-dot-pending {
+    @apply step-dot bg-dark-100 text-white/50 border border-white/10;
+  }
+
+  .step-line {
+    @apply flex-1 h-0.5 bg-white/10 transition-all duration-300;
+  }
+
+  .step-line-active {
+    @apply step-line bg-primary-500;
+  }
+
+  /* ========================================
+     NAVIGATION
+     ======================================== */
+  .nav-link {
+    @apply relative px-4 py-2 text-white/70 hover:text-white transition-colors duration-300;
+  }
+
+  .nav-link::after {
+    @apply content-[''] absolute bottom-0 left-1/2 w-0 h-0.5 bg-gradient-to-r from-accent-cyan to-accent-purple
+           transition-all duration-300 -translate-x-1/2;
+  }
+
+  .nav-link:hover::after {
+    @apply w-full;
+  }
+
+  /* ========================================
+     PAYMENT METHOD CARD
+     ======================================== */
+  .payment-card {
+    @apply relative flex items-center gap-4 p-4 bg-dark-100 rounded-xl border-2 border-white/5
+           cursor-pointer transition-all duration-300 hover:border-white/20;
+  }
+
+  .payment-card-selected {
+    @apply payment-card border-primary-500 bg-primary-500/10;
+  }
+
+  .payment-card-logo {
+    @apply w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center;
+  }
+}
+
+@layer utilities {
+  /* ========================================
+     TEXT GRADIENT
+     ======================================== */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-accent-cyan via-white to-accent-purple;
+  }
+
+  .text-gradient-primary {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-accent-purple;
+  }
+
+  /* ========================================
+     GLOW EFFECTS
+     ======================================== */
+  .glow-cyan {
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.4), 0 0 40px rgba(0, 240, 255, 0.2);
+  }
+
+  .glow-purple {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4), 0 0 40px rgba(168, 85, 247, 0.2);
+  }
+
+  .glow-text-cyan {
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.8), 0 0 20px rgba(0, 240, 255, 0.4);
+  }
+
+  /* ========================================
+     GLASS MORPHISM
+     ======================================== */
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10;
+  }
+
+  /* ========================================
+     CONTAINER
+     ======================================== */
+  .container-page {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .container-card {
+    @apply max-w-4xl mx-auto px-4 sm:px-6;
+  }
+
+  /* Safe area for mobile nav */
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+}

@@ -1,0 +1,14 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#1a1a2e"/>
+  <rect x="0" y="0" width="1200" height="630" fill="url(#gradient)"/>
+  <defs>
+    <linearGradient id="gradient" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+  </defs>
+  <circle cx="200" cy="315" r="150" fill="white" opacity="0.1"/>
+  <circle cx="1000" cy="315" r="200" fill="white" opacity="0.1"/>
+  <text x="600" y="300" text-anchor="middle" fill="white" font-family="Arial" font-size="48" font-weight="bold">Topup Kilat</text>
+  <text x="600" y="350" text-anchor="middle" fill="white" font-family="Arial" font-size="24" opacity="0.8">Top Up Game Tercepat & Termurah</text>
+</svg>

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(New-Item *)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(Get-Content \"E:\\\\Website\\\\TopupKilat\\\\src\\\\components\\\\game\\\\GameGrid.tsx\")",
+      "Bash(Select-Object -First 70)",
+      "Bash(npx prisma *)",
+      "Bash(npx ts-node *)",
+      "WebSearch",
+      "WebFetch(domain:digiflazz.com)",
+      "WebFetch(domain:id.digiflazz.com)",
+      "WebFetch(domain:member.digiflazz.com)",
+      "WebFetch(domain:api.digiflazz.com)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}
