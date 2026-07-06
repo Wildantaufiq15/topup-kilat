@@ -202,7 +202,7 @@ export async function createInvoice(
     phone: params.phone.replace(/^0/, '62'), // Convert 08xx to 62xx
     amount: params.amount.toString(),
     merchant_ref: merchantRef,
-    merchant_fee: '1',
+    merchant_fee: 'Merchant', // Who pays fee: "Merchant" or "Customer"
     expired: expired.toString(),
     signature,
   }
