@@ -52,14 +52,14 @@ export default function ProfilPage() {
     setIsEditing(false)
   }
 
-  const getTierBadge = (tier: typeof profile.member_tier) => {
+  const getTierBadge = (tier: string | null | undefined) => {
     const tierConfig = {
       BRONZE: { variant: 'default' as const, icon: '🥉' },
       SILVER: { variant: 'default' as const, icon: '🥈' },
       GOLD: { variant: 'warning' as const, icon: '🥇' },
       PLATINUM: { variant: 'glow' as const, icon: '💎' },
     }
-    return tierConfig[tier || 'BRONZE']
+    return tierConfig[(tier || 'BRONZE') as keyof typeof tierConfig]
   }
 
   const formatDate = (date: string | null) => {

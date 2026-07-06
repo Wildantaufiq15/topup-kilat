@@ -22,7 +22,8 @@
       "Bash(docker build *)",
       "Bash(curl -s http://localhost:3000)",
       "Bash(npx tsx *)",
-      "WebFetch(domain:topup-kilat-chi.vercel.app)"
+      "WebFetch(domain:topup-kilat-chi.vercel.app)",
+      "Bash(npx vercel *)"
     ]
   }
 }

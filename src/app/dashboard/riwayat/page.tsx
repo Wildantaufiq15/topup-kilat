@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { api } from '@/lib/api'
 import { Badge } from '@/components/ui/Badge'
-import { Skeleton } from '@/components/ui/Skeleton'
+import { Skeleton, TransactionRowSkeleton } from '@/components/ui/Skeleton'
 import { Package, Clock, CheckCircle, XCircle } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 
@@ -79,7 +79,7 @@ export default function RiwayatPage() {
       {isLoading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} variant="transaction" />
+            <TransactionRowSkeleton key={i} />
           ))}
         </div>
       ) : error ? (
