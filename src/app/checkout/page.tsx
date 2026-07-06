@@ -12,8 +12,6 @@ import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, copyToClipboard } from '@/lib/utils'
 import { api } from '@/lib/api'
-import { supabase } from '@/lib/supabase'
-import { createInvoice, type SakurupiahInvoice } from '@/lib/sakurupiah'
 import { useAuth } from '@/context/AuthContext'
 import {
   ArrowLeft,
@@ -25,8 +23,6 @@ import {
   AlertCircle,
   QrCode,
   CreditCard,
-  User,
-  LogOut,
 } from 'lucide-react'
 
 const checkoutSteps = [
@@ -59,14 +55,17 @@ function CheckoutContent() {
   const [copied, setCopied] = useState(false)
   const [orderId, setOrderId] = useState('')
 
-  // Sakurupiah state
-  const [sakurupiahInvoice, setSakurupiahInvoice] = useState<SakurupiahInvoice | null>(null)
+  // Payment state
   const [paymentInstructions, setPaymentInstructions] = useState<{
     type: 'QRIS' | 'VA' | 'EWALLET'
     instruction: string
     qrCode?: string
     paymentNo?: string
     checkoutUrl?: string
+  } | null>(null)
+  const [invoiceData, setInvoiceData] = useState<{
+    expired: string
+    total: number
   } | null>(null)
 
   // Fetch game and product data from Supabase
@@ -134,7 +133,7 @@ function CheckoutContent() {
 
   const total = product.price
 
-  // Handle payment - NOW USES SAKURUPIAH!
+  // Handle payment - USES API ROUTE
   const handleProcessPayment = async () => {
     if (!selectedPayment) {
       toast.error('Pilih metode pembayaran terlebih dahulu')
@@ -155,39 +154,34 @@ function CheckoutContent() {
 
       console.log('Order created:', order)
 
-      // 2. Create Sakurupiah invoice
-      const invoice = await createInvoice({
-        method: selectedPayment,
-        name: profile?.name || user?.email || 'Customer',
-        email: profile?.email || user?.email || 'guest@topupkilat.com',
-        phone: profile?.phone || '081234567890',
-        amount: product.price,
-        merchant_ref: order.invoice_no,
-        expired: 24,
-        produk: [product.name],
-        qty: [1],
-        harga: [product.price],
+      // 2. Create payment via API route (server-side)
+      const response = await fetch('/api/payments/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId: order.id,
+          method: selectedPayment,
+          gameName: game?.name || 'Game',
+          productName: product?.name || 'Product',
+          amount: product.price,
+          userName: profile?.name || user?.email || 'Customer',
+          userEmail: profile?.email || user?.email || 'guest@topupkilat.com',
+          userPhone: profile?.phone || '081234567890',
+        }),
       })
 
-      console.log('Sakurupiah invoice:', invoice)
+      const result = await response.json()
 
-      // 3. Save payment to Supabase
-      const paymentData = {
-        order_id: order.id,
-        method: selectedPayment,
-        amount: invoice.total,
-        status: 'PENDING',
-        provider_ref: invoice.trx_id,
-        merchant_ref: invoice.merchant_ref,
-        qr_url: invoice.qr || null,
-        checkout_url: invoice.checkout_url || null,
-        payment_no: invoice.payment_no ? String(invoice.payment_no) : null,
-        expired_at: invoice.expired,
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to create payment')
       }
 
-      await supabase.from('payments').insert(paymentData)
+      const invoice = result.data
+      console.log('Payment created:', invoice)
 
-      // 4. Set payment instructions based on payment type
+      // 3. Set payment instructions based on payment type
       // Convert our PaymentMethod to Sakurupiah format
       const paymentTypeUpper = selectedPayment.toUpperCase()
       const paymentType = paymentTypeUpper === 'QRIS' ? 'QRIS' :
@@ -201,10 +195,13 @@ function CheckoutContent() {
         instruction: getPaymentInstruction(selectedPayment),
       })
 
-      // 5. Update state
+      // 4. Update state
       setInvoiceNo(order.invoice_no)
       setOrderId(order.id)
-      setSakurupiahInvoice(invoice)
+      setInvoiceData({
+        expired: invoice.expired,
+        total: invoice.total,
+      })
 
       // 6. Move to confirmation
       setIsProcessing(false)
@@ -395,7 +392,7 @@ function CheckoutContent() {
                   Invoice Dibuat!
                 </h2>
                 <p className="text-white/70 mb-6 text-center">
-                  Selesaikan pembayaran sebelum {sakurupiahInvoice?.expired || '24 jam'}.
+                  Selesaikan pembayaran sebelum {invoiceData?.expired || '24 jam'}.
                 </p>
 
                 {/* Payment Instructions - QRIS */}
@@ -494,7 +491,7 @@ function CheckoutContent() {
                   <div className="mt-2 pt-2 border-t border-white/10 flex justify-between text-sm">
                     <span className="text-white/50">Total Bayar</span>
                     <span className="font-bold text-accent-cyan">
-                      {formatCurrency(sakurupiahInvoice?.total || product?.price || 0)}
+                      {formatCurrency(invoiceData?.total || product?.price || 0)}
                     </span>
                   </div>
                 </div>
