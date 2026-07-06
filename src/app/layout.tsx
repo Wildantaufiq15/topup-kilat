@@ -4,6 +4,7 @@ import './globals.css'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { MobileNav } from '@/components/layout/MobileNav'
+import { AuthProvider } from '@/context/AuthContext'
 
 export const metadata: Metadata = {
   title: {
@@ -61,12 +62,14 @@ export default function RootLayout({
   return (
     <html lang="id" className="dark">
       <body className="min-h-screen bg-dark-50">
-        <Header />
-        <main className="pt-16 md:pt-20 pb-20 md:pb-8">
-          {children}
-        </main>
-        <Footer />
-        <MobileNav />
+        <AuthProvider>
+          <Header />
+          <main className="pt-16 md:pt-20 pb-20 md:pb-8">
+            {children}
+          </main>
+          <Footer />
+          <MobileNav />
+        </AuthProvider>
         <Toaster
           position="top-center"
           toastOptions={{

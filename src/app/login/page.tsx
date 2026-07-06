@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
 import { isValidEmail, isValidPhone } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext'
 import { Zap, Mail, Lock, Eye, EyeOff } from 'lucide-react'
 
 function LoginForm() {
@@ -15,11 +16,19 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/dashboard/riwayat'
 
+  const { login, isAuthenticated } = useAuth()
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    router.push(redirect)
+    return null
+  }
 
   const validate = () => {
     const newErrors: typeof errors = {}
@@ -47,14 +56,15 @@ function LoginForm() {
 
     setIsLoading(true)
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    // Mock success (in real app, this would call the auth API)
-    toast.success('Login berhasil!')
-    router.push(redirect)
-
-    setIsLoading(false)
+    try {
+      await login(email, password)
+      toast.success('Login berhasil!')
+      router.push(redirect)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Login gagal')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleGoogleLogin = () => {

@@ -8,12 +8,15 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
 import { isValidEmail, isValidPhone } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext'
 import { Zap, Mail, Lock, User, Phone, Check } from 'lucide-react'
 
 function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/dashboard/riwayat'
+
+  const { register, isAuthenticated } = useAuth()
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -23,6 +26,12 @@ function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [agreed, setAgreed] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Redirect if already authenticated
+  if (isAuthenticated) {
+    router.push(redirect)
+    return null
+  }
 
   const validate = () => {
     const newErrors: Record<string, string> = {}
@@ -66,14 +75,15 @@ function RegisterForm() {
 
     setIsLoading(true)
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    // Mock success
-    toast.success('Registrasi berhasil! Selamat datang di Topup Kilat!')
-    router.push(redirect)
-
-    setIsLoading(false)
+    try {
+      await register({ email, name, password, phone: phone || undefined })
+      toast.success('Registrasi berhasil! Silakan login.')
+      router.push('/login')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Registrasi gagal')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (

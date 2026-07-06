@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { useRouter, usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import { Menu, X, ShoppingCart, User, Zap } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
+import { Menu, X, ShoppingCart, User, Zap, LogOut, ChevronDown } from 'lucide-react'
 
 const navLinks = [
   { href: '/', label: 'Beranda' },
@@ -16,7 +18,12 @@ const navLinks = [
 export function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [isLoggedIn] = useState(false) // TODO: Connect to auth state
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const { isAuthenticated, profile, logout, isLoading } = useAuth()
+  const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,6 +32,28 @@ export function Header() {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [pathname])
+
+  const handleLogout = async () => {
+    await logout()
+    setIsDropdownOpen(false)
+    router.push('/')
+  }
 
   return (
     <header
@@ -68,7 +97,7 @@ export function Header() {
           {/* Right Section */}
           <div className="flex items-center gap-2">
             {/* Cart/Checkout - optional */}
-            {isLoggedIn && (
+            {isAuthenticated && (
               <Link
                 href="/dashboard/riwayat"
                 className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-primary text-white/70 hover:text-white transition-colors"
@@ -78,30 +107,85 @@ export function Header() {
               </Link>
             )}
 
-            {/* Auth Buttons */}
-            {isLoggedIn ? (
-              <Link
-                href="/dashboard/profil"
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-primary border border-white/10 text-white hover:bg-surface-secondary transition-all"
-              >
-                <User size={18} />
-                <span className="hidden sm:inline text-sm font-medium">Profil</span>
-              </Link>
-            ) : (
-              <div className="hidden sm:flex items-center gap-2">
-                <Link
-                  href="/login"
-                  className="px-4 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white transition-colors"
-                >
-                  Masuk
-                </Link>
-                <Link
-                  href="/register"
-                  className="px-4 py-2 rounded-xl text-sm font-medium bg-gradient-to-r from-primary-600 to-primary-500 text-white hover:from-primary-500 hover:to-primary-400 shadow-lg shadow-primary-500/25 transition-all"
-                >
-                  Daftar
-                </Link>
-              </div>
+            {/* Auth Section */}
+            {!isLoading && (
+              isAuthenticated ? (
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-primary border border-white/10 text-white hover:bg-surface-secondary transition-all"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-600 to-accent-purple flex items-center justify-center">
+                      <span className="text-sm font-medium text-white">
+                        {profile?.name?.charAt(0).toUpperCase() || 'U'}
+                      </span>
+                    </div>
+                    <span className="hidden sm:inline text-sm font-medium max-w-[100px] truncate">
+                      {profile?.name || profile?.email?.split('@')[0] || 'User'}
+                    </span>
+                    <ChevronDown size={16} className={cn('transition-transform', isDropdownOpen && 'rotate-180')} />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  <AnimatePresence>
+                    {isDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="absolute right-0 mt-2 w-56 bg-surface-primary rounded-xl border border-white/10 shadow-xl overflow-hidden z-50"
+                      >
+                        <div className="p-3 border-b border-white/10">
+                          <p className="text-sm font-medium text-white truncate">{profile?.name || 'User'}</p>
+                          <p className="text-xs text-white/50 truncate">{profile?.email}</p>
+                        </div>
+                        <div className="p-2">
+                          <Link
+                            href="/dashboard/profil"
+                            onClick={() => setIsDropdownOpen(false)}
+                            className="flex items-center gap-3 px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                          >
+                            <User size={18} />
+                            <span className="text-sm">Profil Saya</span>
+                          </Link>
+                          <Link
+                            href="/dashboard/riwayat"
+                            onClick={() => setIsDropdownOpen(false)}
+                            className="flex items-center gap-3 px-3 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+                          >
+                            <ShoppingCart size={18} />
+                            <span className="text-sm">Riwayat Transaksi</span>
+                          </Link>
+                        </div>
+                        <div className="p-2 border-t border-white/10">
+                          <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-3 px-3 py-2 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors w-full"
+                          >
+                            <LogOut size={18} />
+                            <span className="text-sm">Keluar</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ) : (
+                <div className="hidden sm:flex items-center gap-2">
+                  <Link
+                    href="/login"
+                    className="px-4 py-2 rounded-xl text-sm font-medium text-white/70 hover:text-white transition-colors"
+                  >
+                    Masuk
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="px-4 py-2 rounded-xl text-sm font-medium bg-gradient-to-r from-primary-600 to-primary-500 text-white hover:from-primary-500 hover:to-primary-400 shadow-lg shadow-primary-500/25 transition-all"
+                  >
+                    Daftar
+                  </Link>
+                </div>
+              )
             )}
 
             {/* Mobile Menu Button */}
@@ -136,7 +220,7 @@ export function Header() {
                 </Link>
               ))}
               <div className="pt-4 border-t border-white/5 space-y-2">
-                {isLoggedIn ? (
+                {isAuthenticated ? (
                   <>
                     <Link
                       href="/dashboard/profil"
@@ -144,7 +228,7 @@ export function Header() {
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/5"
                     >
                       <User size={20} />
-                      <span>Profil</span>
+                      <span>Profil Saya</span>
                     </Link>
                     <Link
                       href="/dashboard/riwayat"
@@ -154,6 +238,13 @@ export function Header() {
                       <ShoppingCart size={20} />
                       <span>Riwayat Transaksi</span>
                     </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 w-full"
+                    >
+                      <LogOut size={20} />
+                      <span>Keluar</span>
+                    </button>
                   </>
                 ) : (
                   <>
