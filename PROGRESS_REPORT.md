@@ -1,8 +1,8 @@
 # 📊 Progress Report - Topup Kilat
 
 **Tanggal:** 7 Juli 2026
-**Status:** 🚀 Fase 7 Complete - Payment Gateway Active
-**Versi:** 3.4.0
+**Status:** ⚠️ Fase 7 - Payment Gateway In Progress
+**Versi:** 3.5.0
 
 ---
 
@@ -353,36 +353,32 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
 | **GitHub** | ✅ Active | https://github.com/Wildantaufiq15/topup-kilat |
 | **Sakurupiah** | ✅ Active | Sandbox - API integrated |
 
-### Sakurupiah Credentials (Sandbox):
+### Sakurupiah Credentials:
 ```
-API ID: ID-16501465999
-API Key: KEY-OjHNVb3GvAgB8DdReQCcscE6p
-API URL: https://sakurupiah.id/api-sanbox
-Callback URL: https://topup-kilat-chi.vercel.app/api/callback/sakurupiah
+Production (Belum Aktif):
+  API ID: ID-16501465999
+  API Key: KEY-OjHNVb3GvAgB8DdReQCcscE6p
+
+Sandbox (Aktif):
+  API ID: SANBOX-72297571
+  API Key: SANBOX-lcM0nntF4B7xL0rUFDdCudHIjDY
+  API URL: https://sakurupiah.id/api-sanbox
 ```
 
-## 🎉 Fase 7 - Payment Gateway (COMPLETE!)
-
-### Sakurupiah Integration
+### Sakurupiah Integration Status:
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Sakurupiah Client | ✅ | `src/lib/sakurupiah.ts` |
-| Payment Channels API | ✅ | QRIS, VA, E-Wallet |
-| Create Invoice API | ✅ | Real payment creation |
-| Check Balance API | ✅ | Merchant balance |
-| Callback Handler | ✅ | `src/app/api/callback/sakurupiah` |
+| API Route | ✅ | `/api/payments/create` |
+| Callback Handler | ✅ | `/api/callback/sakurupiah` |
 | Checkout Integration | ✅ | Updated checkout page |
-| QRIS Display | ✅ | Scan QR code UI |
-| VA Display | ✅ | Virtual Account number |
-| E-Wallet Redirect | ✅ | Checkout URL |
+| QRIS/VA/E-Wallet UI | ✅ | Display payment instructions |
+| API Connection | ⚠️ | Sandbox - need correct merchant_fee format |
 
-### API Endpoints:
-- `POST /api-sanbox/create.php` - Create Invoice
-- `POST /api-sanbox/list-payment.php` - List Channels
-- `POST /api-sanbox/check_balance.php` - Check Balance
-- `POST /api-sanbox/status-transaction.php` - Check Status
-- `GET/POST /api/callback/sakurupiah` - Payment Callback
+### Issue:
+- ❌ API Error 400 - merchant_fee format tidak valid
+- Perlu konfirmasi format merchant_fee dari Sakurupiah
 
 ### Supported Payment Methods:
 - QRIS (Direct scan)
@@ -394,10 +390,17 @@ Callback URL: https://topup-kilat-chi.vercel.app/api/callback/sakurupiah
 ## 🎯 Next Steps
 
 1. ~~User Auth~~ - Login/Register pages dengan Supabase Auth ✅
-2. ~~RLS Fix - Registration working~~ (DONE ✅)
-3. ~~Payment Gateway~~ - Sakurupiah integrated ✅
-4. **Supplier API** - Setup Digiflazz untuk deliver diamond
+2. ~~RLS Fix - Registration working~~ ✅
+3. **Payment Gateway** - Sakurupiah sandbox integration ⚠️
+   - [ ] Fix merchant_fee format
+   - [ ] Konfirmasi ke admin Sakurupiah via Telegram
+4. **Supplier API** - Setup Digiflazz untuk deliver diamond ⏳
+   - [ ] Tunggu jawaban tentang IP whitelist
 5. ~~Order Dashboard~~ - User bisa lihat riwayat order ✅
+
+### Action Items:
+- [ ] Tanya ke admin Sakurupiah via Telegram: format merchant_fee yang benar
+- [ ] Tanya ke admin Digiflazz: solusi IP whitelist untuk Vercel
 
 ---
 *User auth sudah, dan order dashboard sudah, namun di web sudah di deploy belum ada*
