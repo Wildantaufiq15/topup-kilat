@@ -333,5 +333,5 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
 4. ~~Order Dashboard~~ - User bisa lihat riwayat order ✅
 
 ---
-
+*User auth sudah, dan order dashboard sudah, namun di web sudah di deploy belum ada*
 *Dokumen ini diupdate pada: 6 Juli 2026*
