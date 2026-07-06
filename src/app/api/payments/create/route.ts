@@ -33,20 +33,38 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Creating Sakurupiah invoice for order:', orderId)
-
-    // Create invoice with Sakurupiah
-    const invoice = await createInvoice({
+    console.log('Request payload:', {
       method,
       name: userName || 'Customer',
       email: userEmail || 'guest@topupkilat.com',
       phone: userPhone || '081234567890',
       amount,
       merchant_ref: `TK-${orderId.slice(0, 8)}-${Date.now()}`,
-      expired: 24,
-      produk: [`${gameName} - ${productName}`],
-      qty: [1],
-      harga: [amount],
     })
+
+    // Create invoice with Sakurupiah
+    let invoice
+    try {
+      invoice = await createInvoice({
+        method,
+        name: userName || 'Customer',
+        email: userEmail || 'guest@topupkilat.com',
+        phone: userPhone || '081234567890',
+        amount,
+        merchant_ref: `TK-${orderId.slice(0, 8)}-${Date.now()}`,
+        expired: 24,
+        produk: [`${gameName} - ${productName}`],
+        qty: [1],
+        harga: [amount],
+      })
+    } catch (apiError: any) {
+      console.error('Sakurupiah API Error:', apiError.message)
+      // Return more detailed error
+      return NextResponse.json(
+        { success: false, message: `Sakurupiah Error: ${apiError.message}` },
+        { status: 400 }
+      )
+    }
 
     console.log('Sakurupiah invoice created:', invoice)
 
