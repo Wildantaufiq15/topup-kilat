@@ -348,11 +348,10 @@ class ApiClient {
       .from('vouchers')
       .select('*')
       .eq('is_active', true)
-      .gt('usage_limit', supabase.rpc('get_used_quota', { v_id: voucher.id }))
       .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
-      .order('created_at', { ascending: false });
+      .order('sort_order', { ascending: true });
     if (error) throw new Error(error.message);
-    return data;
+    return data || [];
   }
 
   // ==================== PROMOS ====================
