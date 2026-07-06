@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       merchant_ref: `TK-${orderId.slice(0, 8)}-${Date.now()}`,
     })
 
-    // Create invoice with Sakurupiah
+    // Create invoice with Sakurupiah (simplified - only required fields)
     let invoice
     try {
       invoice = await createInvoice({
@@ -52,10 +52,6 @@ export async function POST(request: NextRequest) {
         phone: userPhone || '081234567890',
         amount,
         merchant_ref: `TK-${orderId.slice(0, 8)}-${Date.now()}`,
-        expired: 24,
-        produk: [`${gameName} - ${productName}`],
-        qty: [1],
-        harga: [amount],
       })
     } catch (apiError: any) {
       console.error('Sakurupiah API Error:', apiError.message)
