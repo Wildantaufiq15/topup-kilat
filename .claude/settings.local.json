@@ -32,7 +32,8 @@
       "Bash(curl -s https://topup-kilat-chi.vercel.app/dashboard/riwayat)",
       "WebFetch(domain:sakurupiah.com)",
       "WebFetch(domain:docs.sakurupiah.com)",
-      "WebFetch(domain:sakurupiah.id)"
+      "WebFetch(domain:sakurupiah.id)",
+      "Bash(curl *)"
     ]
   }
 }
