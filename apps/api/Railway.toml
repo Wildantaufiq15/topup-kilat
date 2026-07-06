@@ -7,9 +7,9 @@
 
 [nixpacks]
   NODE_VERSION = "20"
-  INSTALL_CMD = "cd apps/api && npm install"
-  BUILD_CMD = "cd apps/api && npx prisma generate && npm run build"
-  START_CMD = "cd apps/api && npm run start:prod"
+  INSTALL_CMD = "npm install && npx prisma generate"
+  BUILD_CMD = "npm run build"
+  START_CMD = "npm run start:prod"
 
 [deploy]
   healthcheckPath = "/health"
