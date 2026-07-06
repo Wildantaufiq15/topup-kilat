@@ -21,7 +21,8 @@
       "WebFetch(domain:topup-kilat-production.up.railway.app)",
       "Bash(docker build *)",
       "Bash(curl -s http://localhost:3000)",
-      "Bash(npx tsx *)"
+      "Bash(npx tsx *)",
+      "WebFetch(domain:topup-kilat-chi.vercel.app)"
     ]
   }
 }

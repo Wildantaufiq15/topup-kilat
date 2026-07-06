@@ -1,8 +1,8 @@
 # 📊 Progress Report - Topup Kilat
 
 **Tanggal:** 6 Juli 2026
-**Status:** DEPLOY PHASE - Backend Deployed, Environment Variables Setup
-**Versi:** 2.0.1
+**Status:** LIVE - Supabase Backend Connected, Vercel Frontend Deployed
+**Versi:** 3.0.0
 
 ---
 
@@ -25,190 +25,131 @@
 
 ---
 
-## ✅ Fase 2 - Backend Integration (95% Struktur, 60% Fungsional)
+## ✅ Fase 2 - Backend Integration (Switched to Supabase)
 
-### Struktur Backend (NestJS) ✅
+### Perpindahan: Railway → Supabase
 
-```
-apps/api/
-├── prisma/
-│   ├── schema.prisma      # Database schema (15+ tables)
-│   └── seed.ts            # Database seeder
-├── src/
-│   ├── main.ts            # Entry point
-│   ├── app.module.ts      # Root module
-│   ├── prisma/
-│   │   ├── prisma.service.ts
-│   │   └── prisma.module.ts
-│   └── modules/
-│       ├── auth/          # Authentication (JWT, Refresh Token)
-│       ├── users/         # User management
-│       ├── games/          # Game catalog
-│       ├── products/      # Game products
-│       ├── orders/        # Order management
-│       ├── payments/      # Payment gateway integration
-│       ├── vouchers/      # Voucher/promo system
-│       ├── promos/        # Promo banners
-│       ├── notifications/ # User notifications
-│       ├── admin/          # Admin panel API
-│       └── common/         # Shared decorators
-└── .env.example
-```
+| Sebelum | Sesudah |
+|---------|---------|
+| Railway (Backend) | Supabase (Database + Auth) |
+| NestJS + Prisma | Supabase Client + Edge Functions |
+| PostgreSQL Neon | Supabase PostgreSQL |
+| Deployment bermasalah | Auto-deploy seamless |
 
-### Database Schema (15 Tables) ✅
-
-| Table | Deskripsi |
-|-------|-----------|
-| `User` | Akun pengguna dengan role & tier |
-| `RefreshToken` | JWT refresh tokens |
-| `Game` | Katalog game |
-| `GameProduct` | Produk/nominal per game |
-| `Voucher` | Kode promo & diskon |
-| `Promo` | Banner promo |
-| `Order` | Transaksi top up |
-| `Payment` | Detail pembayaran |
-| `PaymentWebhookLog` | Log webhook payment |
-| `SupplierRequest` | Request ke API supplier |
-| `Wishlist` | Game favorit user |
-| `PointsLedger` | Mutasi poin user |
-| `Notification` | Notifikasi user |
-| `AdminActivityLog` | Log aktivitas admin |
-| `CmsContent` | Konten CMS |
-
-### API Endpoints ✅
-
-#### Authentication
-| Method | Endpoint | Deskripsi | Status |
-|--------|----------|-----------|--------|
-| POST | `/auth/register` | Registrasi user | ✅ |
-| POST | `/auth/login` | Login | ✅ |
-| POST | `/auth/refresh` | Refresh token | ✅ |
-| POST | `/auth/logout` | Logout | ✅ |
-
-#### Games & Products
-| Method | Endpoint | Deskripsi | Status |
-|--------|----------|-----------|--------|
-| GET | `/games` | Daftar game (filterable) | ✅ |
-| GET | `/games/slug/:slug` | Detail game | ✅ |
-| GET | `/games/popular` | Game populer | ✅ |
-| GET | `/products/game/:gameId` | Produk per game | ✅ |
-
-#### Orders & Payments
-| Method | Endpoint | Deskripsi | Status |
-|--------|----------|-----------|--------|
-| POST | `/orders` | Buat order | ✅ |
-| GET | `/orders/:id` | Detail order | ✅ |
-| GET | `/orders/invoice/:no` | Lookup via invoice | ✅ |
-| POST | `/orders/:id/checkout` | Initiate payment | ✅ |
-| POST | `/webhooks/payment` | Payment callback | ✅ |
-
-#### Vouchers & Promos
-| Method | Endpoint | Deskripsi | Status |
-|--------|----------|-----------|--------|
-| POST | `/vouchers/validate` | Validasi voucher | ✅ |
-| GET | `/vouchers/active` | Voucher aktif | ✅ |
-| GET | `/promos/banners` | Banner promo | ✅ |
-
-#### User
-| Method | Endpoint | Deskripsi | Status |
-|--------|----------|-----------|--------|
-| GET | `/users/me` | Profile user | ✅ |
-| PATCH | `/users/me` | Update profile | ✅ |
-| GET | `/users/points` | Riwayat poin | ✅ |
-| GET | `/users/wishlist` | Wishlist game | ✅ |
-
-#### Admin
-| Method | Endpoint | Deskripsi | Status |
-|--------|----------|-----------|--------|
-| GET | `/admin/dashboard` | Stats dashboard | ✅ |
-| GET | `/admin/orders` | Daftar order | ✅ |
-| GET | `/admin/users` | Daftar user | ✅ |
+### Mengapa Supabase?
+- ✅ Setup lebih mudah (tidak ada monorepo problem)
+- ✅ Built-in Authentication (tanpa JWT manual)
+- ✅ PostgreSQL dengan RLS (Row Level Security)
+- ✅ Edge Functions untuk server-side logic
+- ✅ Dashboard yang jelas
+- ✅ Gratis tier: 500MB DB, 2GB storage, 50k users
 
 ---
 
-## 🚀 DEPLOY Phase - Progress
+## ✅ Fase 3 - Database Setup (Supabase)
+
+### Database Schema (14 Tables)
+
+| Table | Deskripsi | Status |
+|-------|-----------|--------|
+| `users` | Akun pengguna dengan role & tier | ✅ |
+| `refresh_tokens` | JWT refresh tokens | ✅ |
+| `games` | Katalog game | ✅ |
+| `game_products` | Produk/nominal per game | ✅ |
+| `orders` | Transaksi top up | ✅ |
+| `payments` | Detail pembayaran | ✅ |
+| `payment_webhook_logs` | Log webhook payment | ✅ |
+| `vouchers` | Kode promo & diskon | ✅ |
+| `promos` | Banner promo | ✅ |
+| `wishlists` | Game favorit user | ✅ |
+| `points_ledger` | Mutasi poin user | ✅ |
+| `notifications` | Notifikasi user | ✅ |
+| `supplier_requests` | Request ke API supplier | ✅ |
+
+### Seed Data
+- 5 Games (Mobile Legends, Free Fire, PUBG Mobile, Genshin Impact, Valorant)
+- Products untuk Mobile Legends
+- 2 Vouchers aktif
+- 2 Promo banners
+
+### Security
+- ⚠️ RLS disabled untuk development
+- 🔒 Perlu setup RLS policies sebelum production
+
+---
+
+## ✅ Fase 4 - Frontend Integration
+
+### API Client
+- Menggunakan `@supabase/supabase-js`
+- File: `src/lib/supabase.ts` (client config)
+- File: `src/lib/api.ts` (API methods)
+
+### Methods Available:
+- Auth: register, login, logout, getSession
+- Games: getGames, getGameBySlug, getPopularGames
+- Products: getProductsByGame
+- Orders: createOrder, getOrder, getUserOrders
+- Payments: checkout
+- Vouchers: validateVoucher, getActiveVouchers
+- User: getProfile, updateProfile
+- Wishlist: getWishlist, addToWishlist, removeFromWishlist
+
+---
+
+## ✅ Fase 5 - Deployment (Complete)
+
+### Live URLs
+
+| Service | URL | Status |
+|---------|-----|--------|
+| **Website** | https://topup-kilat-chi.vercel.app | ✅ Live |
+| **Supabase** | https://supabase.com/dashboard | ✅ Ready |
 
 ### Deployment Status
 
-| Komponen | Provider | Status | URL/Notes |
-|----------|----------|--------|-----------|
-| **Database** | Neon PostgreSQL | ✅ Ready | Project created, connection string ready |
-| **Backend** | Railway | ✅ Deployed | `https://topup-kilat-production.up.railway.app` |
-| **Frontend** | Vercel | ⏳ Pending | Belum di-deploy |
-| **Environment Vars** | Railway | 🔄 In Progress | DATABASE_URL & JWT_SECRET sudah, perlu tambah FRONTEND_URL & NODE_ENV |
+| Komponen | Provider | Status |
+|----------|----------|--------|
+| Frontend | Vercel | ✅ Deployed |
+| Database | Supabase | ✅ Ready |
+| Auth | Supabase | ✅ Ready |
+| API Client | Local (Vercel) | ✅ Connected |
 
-### External Services Setup
-
-#### Payment Gateway
-| Provider | Status | Notes |
-|----------|--------|-------|
-| **Sakurupiah** | ⏳ Verifikasi | Akun sedang dalam proses verifikasi |
-
-#### Supplier API
-| Provider | Status | Notes |
-|----------|--------|-------|
-| **Digiflazz** | ⏳ Tunggu Deploy | Admin minta deploy dulu sebelum verifikasi via Telegram |
-
-### Deployment Checklist
-
-- [x] Buat project Neon PostgreSQL
-- [x] Setup Railway deployment configuration
-- [x] Deploy backend ke Railway
-- [x] Konfigurasi DATABASE_URL di Railway
-- [x] Konfigurasi JWT_SECRET di Railway
-- [x] Konfigurasi FRONTEND_URL di Railway (`*`)
-- [x] Konfigurasi NODE_ENV di Railway (`production`)
-- [x] Redeploy backend untuk apply env vars
-- [ ] Run `prisma migrate deploy` di Railway
-- [ ] Deploy frontend ke Vercel
-- [ ] Setup webhook Sakurupiah
-- [ ] Verifikasi ke Digiflazz via Telegram
+### Environment Variables (Vercel)
+```
+NEXT_PUBLIC_SUPABASE_URL = https://tzykgukfnmgjwvaebtnc.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY = [anon key]
+```
 
 ---
 
-## ⚠️ Issue yang Belum Selesai
+## ⚠️ Yang Belum Selesai
 
-### Critical Issues (Backend)
+### Critical (MVP MVP)
 
-| Issue | File | Deskripsi |
-|-------|------|-----------|
-| **Payment MOCK** | `payments.service.ts:20` | Payment gateway Sakurupiah belum terkoneksi (masih mock) |
-| **Supplier API** | `payments.service.ts:123` | Belum ada integrasi supplier game |
-| **Order Processing** | `handlePaymentSuccess()` | Status tidak diupdate ke PROCESSING/SUCCESS |
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Order Flow - Test | 🔄 Need testing | Test checkout process |
+| Payment Gateway | ⏳ Pending | Sakurupiah belum terintegrasi |
+| Supplier API | ⏳ Pending | Digiflazz belum terintegrasi |
+| Order Status Update | ⏳ Pending | PAID → PROCESSING → SUCCESS flow |
 
-### Impact
-- Order flow: CREATE → PENDING_PAYMENT → **TERDETAK di PAID** → tidak ada next step
-- User tidak pernah menerima diamond/UC karena supplier API belum dipanggil
-- Payment hanya simulate, tidak benar-benar terintegrasi dengan Sakurupiah
+### High Priority
 
----
+| Feature | Status | Notes |
+|---------|--------|-------|
+| User Dashboard | ⏳ Pending | Riwayat order, profile |
+| Auth Pages | ⏳ Pending | Login, register UI |
+| Email Notifications | ⏳ Pending | Konfirmasi order, payment |
+| RLS Policies | ⏳ Pending | Security untuk production |
 
-## 📁 Struktur Proyek Lengkap
+### Medium Priority
 
-```
-topup-kilat/
-├── apps/
-│   └── api/                 # NestJS Backend
-│       ├── Railway.toml     # Railway deployment config
-│       ├── Dockerfile       # Docker production image
-│       ├── prisma/
-│       │   ├── schema.prisma
-│       │   └── seed.ts
-│       └── src/
-│           ├── main.ts
-│           ├── app.module.ts
-│           └── modules/...
-├── src/                     # Next.js Frontend
-│   ├── app/...
-│   ├── components/...
-│   └── lib/api.ts           # API Client
-├── Railway.toml             # Root Railway config (deprecated)
-├── package.json
-├── tsconfig.json
-├── tailwind.config.ts
-├── next.config.ts
-└── .env.example
-```
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Admin Panel | ⏳ Pending | CRUD games, products, vouchers |
+| Real-time Updates | ⏳ Pending | Order status |
+| SMS/WhatsApp | ⏳ Pending | Notifications |
 
 ---
 
@@ -218,68 +159,59 @@ topup-kilat/
 |--------|-------|
 | Total Files | ~120 files |
 | Frontend Pages | 8 pages |
-| Backend Modules | 10 modules |
-| API Endpoints | 30+ endpoints |
-| Database Tables | 15 tables |
-| Git Commits | 5 commits |
-| Deployments | 1 (Railway Backend) |
+| Database Tables | 13 tables |
+| Games | 5 (with products) |
+| Live Deployments | 1 (Vercel) |
+| Git Commits | 8+ commits |
 
 ---
 
-## 🔗 Live URLs
+## 🔄 Roadmap
 
-| Service | URL | Status |
-|---------|-----|--------|
-| Backend API | `https://topup-kilat-production.up.railway.app` | ✅ Running |
-| API Docs | `https://topup-kilat-production.up.railway.app/api/v1/docs` | ✅ Available |
-| Health Check | `https://topup-kilat-production.up.railway.app/health` | ✅ Available |
-| Frontend | *(belum deploy)* | ⏳ Pending |
+### Fase 6 - MVP Completion (Current)
+> Testing & Fixing Order Flow
 
----
+- [x] Setup Supabase
+- [x] Setup Database Schema
+- [x] Seed Data
+- [x] Connect Frontend to Supabase
+- [x] Deploy to Vercel
+- [ ] Test Order Flow
+- [ ] Fix bugs found during testing
 
-## ⏳ Yang Belum Dibuat (Roadmap)
-
-### 🚀 DEPLOY Phase - CURRENT
-> **Lanjutkan dari sini**
-
-#### Checklist Lanjutan:
-- [ ] Tambahkan `FRONTEND_URL = *` di Railway Variables
-- [ ] Tambahkan `NODE_ENV = production` di Railway Variables
-- [ ] Redeploy backend di Railway
-- [ ] Setup Prisma migration di Railway (via Start Command)
-- [ ] Deploy Frontend ke Vercel
-
-### Fase 2.1 - Selesaikan Payment & Supplier Integration
-> **Setelah DEPLOY phase selesai**
+### Fase 7 - Payment & Supplier Integration
+> After MVP Flow Complete
 
 - [ ] Integrasi Sakurupiah Payment Gateway
 - [ ] Supplier API integration (Digiflazz)
 - [ ] Order processing flow (PAID → PROCESSING → SUCCESS/FAILED)
-- [ ] Auto-retry failed supplier requests
+- [ ] Webhook handlers
 
-### Fase 3 - User Dashboard
-> **Setelah Fase 2.1 selesai**
+### Fase 8 - User Experience
+> After Payment Integration
 
-- [ ] Halaman dashboard user
-- [ ] Riwayat transaksi
-- [ ] Edit profile
+- [ ] Auth pages (login, register)
+- [ ] User dashboard
+- [ ] Order history
 - [ ] Wishlist page
+- [ ] Profile editing
 
-### Fase 4 - Admin Panel
-> **Setelah Fase 3 selesai**
+### Fase 9 - Admin Panel
+> After User Experience
 
-- [ ] Halaman admin dashboard
+- [ ] Admin dashboard
 - [ ] CRUD games & products
 - [ ] CRUD vouchers & promos
 - [ ] Monitoring transaksi
 - [ ] Manajemen user
 
-### Fase 5 - Enhancements
-> **MVP selesai setelah Fase 4**
+### Fase 10 - Enhancements
+> MVP Complete after Phase 9
 
-- [ ] Real-time status (Socket.io)
-- [ ] WhatsApp/SMS notifications
+- [ ] Real-time status (Supabase Realtime)
 - [ ] Email notifications
+- [ ] WhatsApp/SMS notifications
+- [ ] Push notifications
 
 ---
 
@@ -291,36 +223,45 @@ topup-kilat/
 - Tailwind CSS
 - Framer Motion
 
-### Backend
-- NestJS 10
-- Prisma ORM
-- PostgreSQL (Neon)
-- JWT Authentication
+### Backend (Backend-as-a-Service)
+- Supabase (PostgreSQL + Auth)
+- @supabase/supabase-js client
 
 ### Deployment
-- Frontend: Vercel (pending)
-- Backend: Railway ✅
-- Database: Neon PostgreSQL ✅
+- Frontend: Vercel ✅
+- Database: Supabase ✅
 
 ---
 
 ## 📝 Catatan Sesi
 
-### 6 Juli 2026 - Deployment Session (Siang)
-- Setup Railway deployment configuration
-- Fix Next.js security vulnerability (update to 15.1.11)
-- Fix build errors (exclude apps/api from Next.js)
-- Successfully deployed backend to Railway
-- Backend URL: `https://topup-kilat-production.up.railway.app`
-- ✅ Added FRONTEND_URL and NODE_ENV environment variables
-- ✅ Redeployed backend with new environment variables
-- ⏸️ Session ended - laptop dimatikan
+### 6 Juli 2026 - Migration to Supabase Session (Sore)
+
+#### Problems with Railway:
+- Railway monorepo deployment sangat problematic
+- Build sering gagal karena path issues (dist/main vs dist/src/main)
+- Health check selalu gagal
+- Build crashes berulang
+
+#### Solution - Supabase:
+-Migrasi dari Railway + NestJS + Prisma ke Supabase
+- Setup Supabase PostgreSQL database
+- Buat schema tables sesuai kebutuhan
+- Install @supabase/supabase-js
+- Buat API client untuk connect frontend
+- Deploy ke Vercel
+- Website berhasil live!
+
+#### Lessons Learned:
+1. Monorepo + Railway = painful
+2. Supabase BaaS = much simpler for this use case
+3. Start simple, scale later
 
 ---
 
-## 🔄 Resume Project - Development Environment
+## 🔄 Resume Project Instructions
 
-### Kalau laptop baru dinyalakan (Development):
+### Kalau laptop baru dinyalakan:
 
 #### 1. Buka Project
 ```bash
@@ -330,101 +271,51 @@ cd E:\Website\TopupKilat
 #### 2. Install Dependencies (jika perlu)
 ```bash
 npm install
-cd apps/api && npm install && cd ..
+npm install @supabase/supabase-js
 ```
-*Biasanya tidak perlu kalau folder `node_modules` masih ada*
 
 #### 3. Jalankan Development Server
 ```bash
-# Frontend (terminal 1)
 npm run dev
-
-# Backend (terminal 2)
-cd apps/api && npm run start:dev
 ```
+Buka http://localhost:3000
 
-#### 4. Cek Environment Variables Lokal
-Pastikan ada file `.env` di:
-- Root: `E:\Website\TopupKilat\.env`
-- Backend: `E:\Website\TopupKilat\apps\api\.env`
-
-Contoh isi `.env` lokal:
+#### 4. Cek Environment Variables
+Pastikan ada file `.env.local`:
 ```env
-# Frontend (root)
-NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1
-
-# Backend (apps/api)
-DATABASE_URL="postgresql://postgres:password@localhost:5432/topupkilat"
-JWT_SECRET="your-jwt-secret"
-FRONTEND_URL="http://localhost:3000"
-PORT=4000
+NEXT_PUBLIC_SUPABASE_URL=https://tzykgukfnmgjwvaebtnc.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
 ```
 
----
+### Kalau mau update Supabase schema:
 
-## 🔄 Resume Project - Deployment (Production)
+1. Buka https://supabase.com/dashboard
+2. Pilih project → SQL Editor
+3. Run SQL queries
 
-### Kalau mau lanjut deployment:
+### Kalau mau update seed data:
 
-#### 1. Cek Status Deployment
-Buka browser, cek:
-- Backend: https://topup-kilat-production.up.railway.app/health
-- Railway Dashboard: https://railway.app
+1. Buka Supabase SQL Editor
+2. Run INSERT statements
+3. Refresh website
 
-#### 2. Database Migration (Jalankan di Railway)
-1. Buka Railway Dashboard
-2. Pergi ke **Settings** → **Start Command**
-3. Ubah isi jadi:
-   ```
-   cd apps/api && npx prisma migrate deploy && node dist/main
-   ```
-4. Klik **Save** atau redeploy
+### Kalau mau deploy ulang ke Vercel:
 
-#### 3. Deploy Frontend ke Vercel
-1. Buka https://vercel.com
-2. Login dengan GitHub
-3. Klik **"Add New"** → **"Project"**
-4. Pilih repository `topup-kilat`
-5. Vercel auto-detect Next.js
-6. Klik **"Deploy"**
-7. Setelah deploy, catat URL Vercel
-
-#### 4. Update Frontend API URL
-Setelah dapat URL Vercel, update di:
-- File `src/lib/api.ts` → ubah API_BASE_URL ke URL Railway
-- Commit & push
-- Vercel auto-redeploy
-
-#### 5. Test Koneksi
-- Buka URL Vercel
-- Test order flow
-- Cek apakah data dari API Railway muncul
-
-#### 6. Lanjut ke Verifikasi Digiflazz
-1. Chat admin Digiflazz via Telegram
-2. Beri link website (URL Vercel)
-3. Ikuti instruksi verifikasi
-4. Dapat API credentials Digiflazz
+1. git push origin main
+2. Vercel auto-deploy
 
 ---
 
-### Checklist Resume:
+## 🔗 External Services
 
-- [ ] Cek health check Railway
-- [ ] Setup Start Command untuk Prisma migration
-- [ ] Redeploy backend
-- [ ] Deploy frontend ke Vercel
-- [ ] Update API URL di frontend
-- [ ] Test website
-- [ ] Verifikasi ke Digiflazz
-
-### External Services Status
-- **Neon PostgreSQL**: ✅ Ready (butuh redeploy untuk apply env vars)
-- **Railway**: ✅ Backend deployed
-- **Sakurupiah**: ⏳ Menunggu verifikasi
-- **Digiflazz**: ⏳ Menunggu deploy selesai
+| Service | Status | Notes |
+|---------|--------|-------|
+| **Supabase** | ✅ Active | Project: topup-kilat |
+| **Vercel** | ✅ Deployed | https://topup-kilat-chi.vercel.app |
+| **Sakurupiah** | ⏳ Pending | Payment gateway, perlu verifikasi |
+| **Digiflazz** | ⏳ Pending | Supplier API, perlu verifikasi |
+| **GitHub** | ✅ Active | https://github.com/Wildantaufiq15/topup-kilat |
 
 ---
 
 *Dokumen ini diupdate pada: 6 Juli 2026*
-
