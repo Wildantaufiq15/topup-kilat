@@ -111,17 +111,33 @@ async function sakurupiahRequest<T>(
 ): Promise<SakurupiahResponse<T>> {
   const url = `${API_URL}/${endpoint}`
 
+  // Build form data properly handling arrays
+  const formData = new URLSearchParams()
+  for (const [key, value] of Object.entries(payload)) {
+    if (Array.isArray(value)) {
+      // For arrays, add each item with same key
+      value.forEach((item) => {
+        formData.append(key, String(item))
+      })
+    } else {
+      formData.append(key, String(value))
+    }
+  }
+
   const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${API_KEY}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: new URLSearchParams(payload).toString(),
+    body: formData.toString(),
   })
 
   if (!response.ok) {
-    throw new Error(`Sakurupiah API Error: ${response.status} ${response.statusText}`)
+    // Get response text for debugging
+    const text = await response.text()
+    console.error('Sakurupiah API Error:', response.status, text)
+    throw new Error(`Sakurupiah API Error: ${response.status} - ${text}`)
   }
 
   return response.json()
@@ -186,6 +202,7 @@ export async function createInvoice(
     phone: params.phone.replace(/^0/, '62'), // Convert 08xx to 62xx
     amount: params.amount.toString(),
     merchant_ref: merchantRef,
+    merchant_fee: '0', // No additional fee
     expired: expired.toString(),
     callback_url: CALLBACK_URL,
     signature,
@@ -204,15 +221,20 @@ export async function createInvoice(
 
   const response = await sakurupiahRequest<SakurupiahInvoice>('create.php', payload)
 
+  // Handle response - Sakurupiah returns {status, message, data: [...]}
   if (response.status !== '200') {
-    throw new Error(response.message || 'Failed to create invoice')
+    throw new Error(response.message || `API Error: ${response.status}`)
   }
 
   // Response data is an array with one invoice
-  const invoice = Array.isArray(response.data) ? response.data[0] : response.data
+  const invoiceData = Array.isArray(response.data) ? response.data[0] : response.data
+
+  if (!invoiceData) {
+    throw new Error('No invoice data returned')
+  }
 
   return {
-    ...invoice,
+    ...invoiceData,
     merchant_ref: merchantRef, // Ensure merchant_ref is set
   }
 }
