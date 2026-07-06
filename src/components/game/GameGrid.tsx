@@ -1,10 +1,23 @@
 'use client'
 
-import { type Game } from '@/types'
 import { GameCard, GameCardList } from './GameCard'
 import { GameCardSkeleton } from '@/components/ui/Skeleton'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
+
+// Support both mock and Supabase format
+interface Game {
+  id: string
+  name: string
+  slug: string
+  logo: string
+  banner?: string
+  category: string
+  description?: string
+  requires_server_id?: boolean
+  is_active?: boolean
+  featured?: boolean
+}
 
 interface GameGridProps {
   games: Game[]
@@ -34,14 +47,14 @@ export function GameGrid({
   if (isLoading) {
     return (
       <div className={cn('grid gap-3', gridColsClasses[columns])}>
-        {Array.from({ length: Math.min(games.length || 8, 12) }).map((_, i) => (
+        {Array.from({ length: Math.min(games?.length || 8, 12) }).map((_, i) => (
           <GameCardSkeleton key={i} />
         ))}
       </div>
     )
   }
 
-  if (games.length === 0) {
+  if (!games || games.length === 0) {
     return (
       <div className="text-center py-12">
         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-surface-primary flex items-center justify-center">

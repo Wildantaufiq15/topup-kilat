@@ -1,4 +1,6 @@
-import { Suspense } from 'react'
+'use client'
+
+import { useState, useEffect } from 'react'
 import { GameCardSkeleton } from '@/components/ui/Skeleton'
 import { GameGrid } from '@/components/game/GameGrid'
 import { HeroSection } from './components/HeroSection'
@@ -6,22 +8,54 @@ import { PromoSection } from './components/PromoSection'
 import { PopularGamesSection } from './components/PopularGamesSection'
 import { FeatureSection } from './components/FeatureSection'
 import { TestimonialSection } from './components/TestimonialSection'
-
-// Mock data - akan diganti dengan API call
-import { mockGames, mockPromos } from './data/mockData'
+import { api } from '@/lib/api'
 
 export default function HomePage() {
+  const [games, setGames] = useState<any[]>([])
+  const [promos, setPromos] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [gamesData, promosData] = await Promise.all([
+          api.getPopularGames(8),
+          api.getPromoBanners(),
+        ])
+        setGames(gamesData)
+        setPromos(promosData)
+      } catch (error) {
+        console.error('Error fetching homepage data:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
       <HeroSection />
 
       {/* Promo Banner */}
-      <PromoSection promos={mockPromos} />
+      <PromoSection promos={promos} />
 
       {/* Popular Games */}
       <section className="container-page py-12">
-        <PopularGamesSection games={mockGames} />
+        {isLoading ? (
+          <div className="space-y-4">
+            <div className="h-8 w-48 bg-dark-100 rounded animate-pulse" />
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <GameCardSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <PopularGamesSection games={games} />
+        )}
       </section>
 
       {/* Features */}

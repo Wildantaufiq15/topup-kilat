@@ -1,14 +1,25 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { type GameProduct } from '@/types'
 import { cn, formatCurrency } from '@/lib/utils'
 import { Check, Zap, Sparkles } from 'lucide-react'
 
+// Support both mock data format and Supabase format
+interface Product {
+  id: string
+  name?: string
+  label?: string
+  price: number
+  original_price?: number
+  originalPrice?: number
+  discount?: number
+  stock?: string
+}
+
 interface NominalGridProps {
-  products: GameProduct[]
+  products: Product[]
   selectedId?: string
-  onSelect: (product: GameProduct) => void
+  onSelect: (product: Product) => void
   isLoading?: boolean
 }
 
@@ -38,8 +49,13 @@ export function NominalGrid({ products, selectedId, onSelect, isLoading = false 
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
       {products.map((product, index) => {
         const isSelected = selectedId === product.id
-        const hasDiscount = product.discount && product.discount > 0
-        const isBestValue = product.discount && product.discount >= 20
+        const originalPrice = product.original_price || product.originalPrice
+        const hasDiscount = originalPrice && originalPrice > product.price
+        const discountPercent = hasDiscount ? Math.round(((originalPrice - product.price) / originalPrice) * 100) : 0
+        const isBestValue = discountPercent >= 20
+
+        // Support both name and label
+        const displayName = product.name || product.label || 'Unknown'
 
         return (
           <motion.div
@@ -72,7 +88,7 @@ export function NominalGrid({ products, selectedId, onSelect, isLoading = false 
               {hasDiscount && !isBestValue && (
                 <div className="absolute -top-2 -right-2">
                   <span className="px-2 py-1 text-xs font-bold bg-red-500 text-white rounded-full">
-                    -{product.discount}%
+                    -{discountPercent}%
                   </span>
                 </div>
               )}
@@ -80,7 +96,7 @@ export function NominalGrid({ products, selectedId, onSelect, isLoading = false 
               {/* Product Label */}
               <div className="flex items-start justify-between mb-2">
                 <span className="font-bold text-white text-lg leading-tight">
-                  {product.label}
+                  {displayName}
                 </span>
                 {isSelected && (
                   <div className="w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center flex-shrink-0">
@@ -94,9 +110,9 @@ export function NominalGrid({ products, selectedId, onSelect, isLoading = false 
                 <span className="font-bold text-primary-400 text-lg">
                   {formatCurrency(product.price)}
                 </span>
-                {hasDiscount && product.originalPrice && (
+                {hasDiscount && originalPrice && (
                   <span className="block text-sm text-white/40 line-through">
-                    {formatCurrency(product.originalPrice)}
+                    {formatCurrency(originalPrice)}
                   </span>
                 )}
               </div>
@@ -122,7 +138,9 @@ export function NominalList({ products, selectedId, onSelect }: NominalGridProps
     <div className="space-y-2">
       {products.map((product) => {
         const isSelected = selectedId === product.id
-        const hasDiscount = product.discount && product.discount > 0
+        const originalPrice = product.original_price || product.originalPrice
+        const hasDiscount = originalPrice && originalPrice > product.price
+        const displayName = product.name || product.label || 'Unknown'
 
         return (
           <button
@@ -141,7 +159,7 @@ export function NominalList({ products, selectedId, onSelect }: NominalGridProps
                   <Check size={12} className="text-white" />
                 </div>
               )}
-              <span className="font-semibold text-white">{product.label}</span>
+              <span className="font-semibold text-white">{displayName}</span>
             </div>
             <div className="text-right">
               <span className="font-bold text-primary-400">
@@ -149,7 +167,7 @@ export function NominalList({ products, selectedId, onSelect }: NominalGridProps
               </span>
               {hasDiscount && (
                 <span className="block text-xs text-white/40 line-through">
-                  {formatCurrency(product.originalPrice || 0)}
+                  {formatCurrency(originalPrice || 0)}
                 </span>
               )}
             </div>

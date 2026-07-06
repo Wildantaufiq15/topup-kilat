@@ -1,17 +1,17 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { type PaymentMethod } from '@/types'
-import { mockGames, mockProducts } from '../data/mockData'
 import { PaymentMethodSelector } from '@/components/game/PaymentMethodSelector'
 import { StepIndicator } from '@/components/game/StepIndicator'
 import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, copyToClipboard } from '@/lib/utils'
+import { api } from '@/lib/api'
 import {
   ArrowLeft,
   Shield,
@@ -36,11 +36,12 @@ function CheckoutContent() {
   const productId = searchParams.get('product')
   const userId = searchParams.get('userId')
   const serverId = searchParams.get('serverId')
+  const voucherCode = searchParams.get('voucher')
 
-  // Get game and product data
-  const game = mockGames.find(g => g.slug === gameSlug)
-  const products = mockProducts[gameSlug || ''] || []
-  const product = products.find(p => p.id === productId)
+  // Data state
+  const [game, setGame] = useState<any>(null)
+  const [product, setProduct] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   // Checkout state
   const [step, setStep] = useState<'identify' | 'payment' | 'confirmation'>('identify')
@@ -49,8 +50,48 @@ function CheckoutContent() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [invoiceNo, setInvoiceNo] = useState('')
   const [copied, setCopied] = useState(false)
+  const [orderId, setOrderId] = useState('')
+
+  // Fetch game and product data from Supabase
+  useEffect(() => {
+    async function fetchData() {
+      if (!gameSlug || !productId) {
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        // Fetch game
+        const gameData = await api.getGameBySlug(gameSlug)
+        setGame(gameData)
+
+        // Fetch products
+        const products = await api.getProductsByGame(gameData.id)
+        const selectedProduct = products.find((p: any) => p.id === productId)
+        setProduct(selectedProduct)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        toast.error('Gagal memuat data')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [gameSlug, productId])
 
   // Redirect if no product selected
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-white/60">Memuat checkout...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!game || !product) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -68,26 +109,50 @@ function CheckoutContent() {
 
   const total = product.price
 
-  // Handle payment
+  // Handle payment - NOW ACTUALLY CREATES ORDER IN SUPABASE!
   const handleProcessPayment = async () => {
     if (!selectedPayment) {
       toast.error('Pilih metode pembayaran terlebih dahulu')
       return
     }
 
+    if (!userId) {
+      toast.error('User ID diperlukan')
+      return
+    }
+
     setIsProcessing(true)
 
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    try {
+      // 1. Create order in Supabase
+      const order = await api.createOrder({
+        gameSlug: gameSlug!,
+        productId: productId!,
+        userGameId: userId!,
+        serverId: serverId || undefined,
+        voucherCode: voucherCode || undefined,
+      })
 
-    // Generate mock invoice
-    const mockInvoice = `TK${Date.now()}`
-    setInvoiceNo(mockInvoice)
+      console.log('Order created:', order)
 
-    setIsProcessing(false)
-    setStep('confirmation')
+      // 2. Create payment
+      const payment = await api.checkout(order.id, selectedPayment)
 
-    toast.success('Pembayaran berhasil!')
+      console.log('Payment created:', payment)
+
+      // 3. Update state
+      setInvoiceNo(order.invoice_no)
+      setOrderId(order.id)
+
+      // 4. Show success
+      setIsProcessing(false)
+      setStep('confirmation')
+      toast.success('Pembayaran berhasil!')
+    } catch (error: any) {
+      console.error('Checkout error:', error)
+      setIsProcessing(false)
+      toast.error(error.message || 'Terjadi kesalahan saat checkout')
+    }
   }
 
   // Copy invoice
@@ -297,7 +362,7 @@ function CheckoutContent() {
                   </div>
                   <div>
                     <h4 className="font-semibold text-white">{game.name}</h4>
-                    <p className="text-sm text-white/60">{product.label}</p>
+                    <p className="text-sm text-white/60">{product.name}</p>
                   </div>
                 </div>
 

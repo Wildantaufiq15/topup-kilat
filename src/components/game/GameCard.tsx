@@ -3,9 +3,22 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { type Game } from '@/types'
-import { cn, formatNumber } from '@/lib/utils'
-import { Gamepad2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+// Support both mock data and Supabase format
+interface Game {
+  id: string
+  name: string
+  slug: string
+  logo: string
+  banner?: string
+  category: string
+  description?: string
+  requires_server_id?: boolean
+  is_active?: boolean
+  featured?: boolean
+  totalTransactions?: number
+}
 
 interface GameCardProps {
   game: Game
@@ -18,6 +31,12 @@ export function GameCard({ game, className, featured = false, compact = false }:
   if (compact) {
     return <CompactCard game={game} className={className} featured={featured} />
   }
+
+  // Normalize category for display
+  const categoryLabel = game.category?.toLowerCase?.() === 'mobile' ? 'Mobile' :
+                        game.category?.toLowerCase?.() === 'pc' ? 'PC' :
+                        game.category?.toLowerCase?.() === 'console' ? 'Console' :
+                        game.category?.toLowerCase?.() === 'web' ? 'Web' : 'Game'
 
   return (
     <Link href={`/topup/${game.slug}`} className="block">
@@ -32,7 +51,7 @@ export function GameCard({ game, className, featured = false, compact = false }:
           className
         )}
       >
-        {/* Image Container - Smaller */}
+        {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-dark-100">
           <Image
             src={game.logo || '/placeholder/game.png'}
@@ -54,21 +73,21 @@ export function GameCard({ game, className, featured = false, compact = false }:
           {/* Category Badge */}
           <div className="absolute bottom-1.5 right-1.5">
             <span className="px-1.5 py-0.5 text-[10px] font-medium bg-dark-400/90 backdrop-blur-sm text-white/80 rounded-md">
-              {game.category === 'mobile' ? 'Mobile' :
-               game.category === 'pc' ? 'PC' :
-               game.category === 'console' ? 'Console' : 'Voucher'}
+              {categoryLabel}
             </span>
           </div>
         </div>
 
-        {/* Info - Compact */}
+        {/* Info */}
         <div className="p-2.5">
           <h3 className="font-semibold text-white text-sm truncate group-hover:text-primary-400 transition-colors">
             {game.name}
           </h3>
-          <p className="text-[11px] text-white/40 mt-0.5 truncate">
-            {formatNumber(game.totalTransactions)} transaksi
-          </p>
+          {game.totalTransactions !== undefined && (
+            <p className="text-[11px] text-white/40 mt-0.5 truncate">
+              {game.totalTransactions.toLocaleString('id-ID')} transaksi
+            </p>
+          )}
         </div>
       </motion.div>
     </Link>
@@ -111,6 +130,10 @@ function CompactCard({ game, className, featured }: Omit<GameCardProps, 'compact
 
 // List version for sidebar/compact areas
 export function GameCardList({ game, className }: Omit<GameCardProps, 'featured' | 'compact'>) {
+  const categoryLabel = game.category?.toLowerCase?.() === 'mobile' ? 'Mobile' :
+                        game.category?.toLowerCase?.() === 'pc' ? 'PC' :
+                        game.category?.toLowerCase?.() === 'console' ? 'Console' : 'Game'
+
   return (
     <Link href={`/topup/${game.slug}`} className="block">
       <div
@@ -135,7 +158,7 @@ export function GameCardList({ game, className }: Omit<GameCardProps, 'featured'
           <h4 className="font-medium text-white text-sm truncate group-hover:text-primary-400 transition-colors">
             {game.name}
           </h4>
-          <p className="text-[11px] text-white/40 capitalize">{game.category}</p>
+          <p className="text-[11px] text-white/40 capitalize">{categoryLabel}</p>
         </div>
       </div>
     </Link>

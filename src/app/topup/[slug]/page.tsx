@@ -1,12 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { type Game, type GameProduct } from '@/types'
-import { mockGames, mockProducts } from '../../data/mockData'
 import { NominalGrid } from '@/components/game/NominalGrid'
 import { OrderSummary } from '@/components/game/OrderSummary'
 import { Input } from '@/components/ui/Input'
@@ -15,6 +13,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency } from '@/lib/utils'
+import { api } from '@/lib/api'
 import {
   ArrowLeft,
   User,
@@ -24,7 +23,6 @@ import {
   CheckCircle,
   AlertCircle,
   Copy,
-  ExternalLink,
   ChevronRight
 } from 'lucide-react'
 
@@ -33,19 +31,43 @@ export default function TopupPage() {
   const router = useRouter()
   const slug = params.slug as string
 
-  // Find game data
-  const game = mockGames.find(g => g.slug === slug)
-  const products = mockProducts[slug] || []
+  // Data state from Supabase
+  const [game, setGame] = useState<any>(null)
+  const [products, setProducts] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   // Form state
   const [userId, setUserId] = useState('')
   const [serverId, setServerId] = useState('')
-  const [selectedProduct, setSelectedProduct] = useState<GameProduct | null>(null)
+  const [selectedProduct, setSelectedProduct] = useState<any>(null)
   const [isValidating, setIsValidating] = useState(false)
   const [isValidated, setIsValidated] = useState(false)
   const [validationResult, setValidationResult] = useState<{ nickname?: string; error?: string } | null>(null)
   const [showVoucherModal, setShowVoucherModal] = useState(false)
   const [voucherCode, setVoucherCode] = useState('')
+  const [voucherData, setVoucherData] = useState<any>(null)
+
+  // Fetch game and products from Supabase
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        // Fetch game by slug
+        const gameData = await api.getGameBySlug(slug)
+        setGame(gameData)
+
+        // Fetch products for this game
+        const productsData = await api.getProductsByGame(gameData.id)
+        setProducts(productsData)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        toast.error('Gagal memuat data game')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [slug])
 
   // Handle ID validation
   const handleValidateId = async () => {
@@ -54,39 +76,48 @@ export default function TopupPage() {
       return
     }
 
-    if (game?.requiresServerId && !serverId) {
+    if (game?.requires_server_id && !serverId) {
       toast.error('Masukkan Server ID terlebih dahulu')
       return
     }
 
     setIsValidating(true)
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
 
-    // Mock validation result
-    const mockNicknames: Record<string, string> = {
-      '12345678': 'RizkyPro',
-      '87654321': 'SitiGaming',
-      '11223344': 'TopupKilat',
-    }
+    try {
+      // For now, simulate validation (later can integrate with game API)
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
-    const nickname = mockNicknames[userId]
-    if (nickname) {
-      setValidationResult({ nickname })
+      // Mock validation - just show the userId as nickname
+      setValidationResult({ nickname: `Player ${userId}` })
       setIsValidated(true)
-      toast.success(`Player "${nickname}" ditemukan!`)
-    } else {
-      setValidationResult({ nickname: userId })
-      setIsValidated(true)
-      toast.info('Player ID ditemukan (preview nickname tidak tersedia)')
+      toast.success('Player ID valid!')
+    } catch (error) {
+      toast.error('Validasi gagal')
+    } finally {
+      setIsValidating(false)
     }
-
-    setIsValidating(false)
   }
 
   // Handle product selection
-  const handleProductSelect = (product: GameProduct) => {
+  const handleProductSelect = (product: any) => {
     setSelectedProduct(product)
+  }
+
+  // Handle voucher validation
+  const handleApplyVoucher = async () => {
+    if (!voucherCode) {
+      toast.error('Masukkan kode voucher')
+      return
+    }
+
+    try {
+      const voucher = await api.validateVoucher(voucherCode, selectedProduct?.price)
+      setVoucherData(voucher)
+      toast.success('Voucher berhasil diterapkan!')
+      setShowVoucherModal(false)
+    } catch (error: any) {
+      toast.error(error.message || 'Voucher tidak valid')
+    }
   }
 
   // Handle continue to checkout
@@ -96,7 +127,7 @@ export default function TopupPage() {
       return
     }
 
-    if (game?.requiresServerId && !serverId) {
+    if (game?.requires_server_id && !serverId) {
       toast.error('Masukkan Server ID terlebih dahulu')
       return
     }
@@ -106,14 +137,33 @@ export default function TopupPage() {
       return
     }
 
-    // Navigate to checkout
-    router.push(`/checkout?game=${slug}&product=${selectedProduct.id}&userId=${userId}${serverId ? `&serverId=${serverId}` : ''}`)
+    // Build checkout URL with voucher if applied
+    let checkoutUrl = `/checkout?game=${slug}&product=${selectedProduct.id}&userId=${userId}`
+    if (serverId) {
+      checkoutUrl += `&serverId=${serverId}`
+    }
+    if (voucherCode) {
+      checkoutUrl += `&voucher=${voucherCode}`
+    }
+
+    router.push(checkoutUrl)
   }
 
   // Copy User ID
   const handleCopyId = () => {
     navigator.clipboard.writeText(userId)
     toast.success('User ID berhasil disalin!')
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-white/60">Memuat...</p>
+        </div>
+      </div>
+    )
   }
 
   if (!game) {
@@ -161,7 +211,7 @@ export default function TopupPage() {
             {/* Game Logo */}
             <div className="relative w-20 h-20 md:w-28 md:h-28 rounded-2xl overflow-hidden border-4 border-white/20 shadow-2xl">
               <Image
-                src={game.logo}
+                src={game.logo || '/placeholder-game.png'}
                 alt={game.name}
                 fill
                 className="object-cover"
@@ -247,7 +297,7 @@ export default function TopupPage() {
                 </div>
 
                 {/* Server ID (if required) */}
-                {game.requiresServerId && (
+                {game.requires_server_id && (
                   <div>
                     <label className="text-sm font-medium text-white/80 mb-2 block">
                       Server ID <span className="text-red-400">*</span>
@@ -315,11 +365,15 @@ export default function TopupPage() {
                 Pilih Nominal
               </h2>
 
-              <NominalGrid
-                products={products}
-                selectedId={selectedProduct?.id}
-                onSelect={handleProductSelect}
-              />
+              {products.length > 0 ? (
+                <NominalGrid
+                  products={products}
+                  selectedId={selectedProduct?.id}
+                  onSelect={handleProductSelect}
+                />
+              ) : (
+                <p className="text-white/60">Produk tidak tersedia</p>
+              )}
             </motion.div>
 
             {/* How to Check ID */}
@@ -357,18 +411,20 @@ export default function TopupPage() {
                 game={game}
                 product={selectedProduct || products[0] || {
                   id: '',
-                  gameId: game.id,
-                  label: '-',
+                  game_id: game.id,
+                  name: '-',
                   price: 0,
-                  stock: 'available',
-                  supplierCode: '',
-                  isActive: true,
-                  sortOrder: 0,
+                  stock: 'UNLIMITED',
+                  is_active: true,
                 }}
                 userGameId={userId || 'Belum diisi'}
                 serverId={serverId || undefined}
+                voucher={voucherData}
                 onApplyVoucher={() => setShowVoucherModal(true)}
-                onRemoveVoucher={() => setVoucherCode('')}
+                onRemoveVoucher={() => {
+                  setVoucherCode('')
+                  setVoucherData(null)
+                }}
               />
 
               {/* Continue Button */}
@@ -383,7 +439,7 @@ export default function TopupPage() {
                 Lanjutkan Pembayaran
               </Button>
 
-              {/* Trust Badges */}
+              {/* trust Badges */}
               <div className="flex items-center justify-center gap-4 text-xs text-white/50">
                 <span className="flex items-center gap-1">
                   <Shield size={14} className="text-green-400" />
@@ -427,14 +483,7 @@ export default function TopupPage() {
             </Button>
             <Button
               variant="primary"
-              onClick={() => {
-                if (voucherCode) {
-                  toast.success('Voucher berhasil diterapkan!')
-                  setShowVoucherModal(false)
-                } else {
-                  toast.error('Masukkan kode voucher')
-                }
-              }}
+              onClick={handleApplyVoucher}
               className="flex-1"
             >
               Gunakan
