@@ -14,6 +14,7 @@ import { formatCurrency, copyToClipboard } from '@/lib/utils'
 import { api } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import { createInvoice, type SakurupiahInvoice } from '@/lib/sakurupiah'
+import { useAuth } from '@/context/AuthContext'
 import {
   ArrowLeft,
   Shield,
@@ -24,6 +25,8 @@ import {
   AlertCircle,
   QrCode,
   CreditCard,
+  User,
+  LogOut,
 } from 'lucide-react'
 
 const checkoutSteps = [
@@ -35,6 +38,7 @@ const checkoutSteps = [
 function CheckoutContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { user, profile, isAuthenticated, isLoading: authLoading } = useAuth()
 
   const gameSlug = searchParams.get('game')
   const productId = searchParams.get('product')
@@ -47,9 +51,8 @@ function CheckoutContent() {
   const [product, setProduct] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Checkout state
+  // Checkout state - determine initial step based on auth status
   const [step, setStep] = useState<'identify' | 'payment' | 'confirmation'>('identify')
-  const [isLoggedIn] = useState(false) // TODO: Connect to auth
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [invoiceNo, setInvoiceNo] = useState('')
@@ -93,6 +96,14 @@ function CheckoutContent() {
 
     fetchData()
   }, [gameSlug, productId])
+
+  // Determine initial step when auth is ready
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      // User is logged in - skip to payment step
+      setStep('payment')
+    }
+  }, [authLoading, isAuthenticated])
 
   // Redirect if no product selected
   if (isLoading) {
@@ -147,9 +158,9 @@ function CheckoutContent() {
       // 2. Create Sakurupiah invoice
       const invoice = await createInvoice({
         method: selectedPayment,
-        name: userId!,
-        email: 'guest@topupkilat.com', // TODO: Get from user if logged in
-        phone: '081234567890', // TODO: Get from user if logged in
+        name: profile?.name || user?.email || 'Customer',
+        email: profile?.email || user?.email || 'guest@topupkilat.com',
+        phone: profile?.phone || '081234567890',
         amount: product.price,
         merchant_ref: order.invoice_no,
         expired: 24,
@@ -272,15 +283,7 @@ function CheckoutContent() {
               >
                 <h2 className="text-lg font-bold text-white mb-4">Verifikasi Identitas</h2>
 
-                {isLoggedIn ? (
-                  <div className="flex items-center gap-4 p-4 bg-green-500/10 rounded-xl border border-green-500/30">
-                    <CheckCircle className="w-8 h-8 text-green-400" />
-                    <div>
-                      <p className="font-medium text-green-400">Anda sudah login</p>
-                      <p className="text-sm text-white/70">john@example.com</p>
-                    </div>
-                  </div>
-                ) : (
+                {!authLoading && !isAuthenticated && (
                   <div className="space-y-4">
                     <p className="text-white/70">
                       Anda perlu login untuk melanjutkan pembayaran. Daftar gratis jika belum punya akun.
@@ -316,6 +319,13 @@ function CheckoutContent() {
                     </Button>
                   </div>
                 )}
+
+                {/* Loading state */}
+                {authLoading && (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
               </motion.div>
             )}
 
@@ -326,6 +336,27 @@ function CheckoutContent() {
                 animate={{ opacity: 1, x: 0 }}
                 className="bg-surface-primary rounded-2xl border border-white/5 p-6"
               >
+                {/* User Info Header */}
+                {isAuthenticated && profile && (
+                  <div className="flex items-center justify-between mb-4 p-3 bg-green-500/10 rounded-xl border border-green-500/20">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-600 to-accent-purple flex items-center justify-center">
+                        <span className="text-white font-semibold">
+                          {profile.name?.charAt(0).toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-white">{profile.name || 'User'}</p>
+                        <p className="text-xs text-white/60">{profile.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-green-400">
+                      <CheckCircle size={16} />
+                      <span className="text-sm">Logged in</span>
+                    </div>
+                  </div>
+                )}
+
                 <h2 className="text-lg font-bold text-white mb-4">Pilih Metode Pembayaran</h2>
 
                 <PaymentMethodSelector
