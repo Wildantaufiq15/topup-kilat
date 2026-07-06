@@ -23,7 +23,16 @@
       "Bash(curl -s http://localhost:3000)",
       "Bash(npx tsx *)",
       "WebFetch(domain:topup-kilat-chi.vercel.app)",
-      "Bash(npx vercel *)"
+      "Bash(npx vercel *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://topup-kilat-chi.vercel.app/login)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://topup-kilat-chi.vercel.app/register)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://topup-kilat-chi.vercel.app/dashboard/riwayat)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" https://topup-kilat-chi.vercel.app/dashboard/profil)",
+      "Bash(curl -s https://topup-kilat-chi.vercel.app/login)",
+      "Bash(curl -s https://topup-kilat-chi.vercel.app/dashboard/riwayat)",
+      "WebFetch(domain:sakurupiah.com)",
+      "WebFetch(domain:docs.sakurupiah.com)",
+      "WebFetch(domain:sakurupiah.id)"
     ]
   }
 }

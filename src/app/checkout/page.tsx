@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { type PaymentMethod } from '@/types'
 import { PaymentMethodSelector } from '@/components/game/PaymentMethodSelector'
 import { StepIndicator } from '@/components/game/StepIndicator'
@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
 import { formatCurrency, copyToClipboard } from '@/lib/utils'
 import { api } from '@/lib/api'
+import { supabase } from '@/lib/supabase'
+import { createInvoice, type SakurupiahInvoice } from '@/lib/sakurupiah'
 import {
   ArrowLeft,
   Shield,
@@ -20,6 +22,8 @@ import {
   Copy,
   Check,
   AlertCircle,
+  QrCode,
+  CreditCard,
 } from 'lucide-react'
 
 const checkoutSteps = [
@@ -51,6 +55,16 @@ function CheckoutContent() {
   const [invoiceNo, setInvoiceNo] = useState('')
   const [copied, setCopied] = useState(false)
   const [orderId, setOrderId] = useState('')
+
+  // Sakurupiah state
+  const [sakurupiahInvoice, setSakurupiahInvoice] = useState<SakurupiahInvoice | null>(null)
+  const [paymentInstructions, setPaymentInstructions] = useState<{
+    type: 'QRIS' | 'VA' | 'EWALLET'
+    instruction: string
+    qrCode?: string
+    paymentNo?: string
+    checkoutUrl?: string
+  } | null>(null)
 
   // Fetch game and product data from Supabase
   useEffect(() => {
@@ -109,15 +123,10 @@ function CheckoutContent() {
 
   const total = product.price
 
-  // Handle payment - NOW ACTUALLY CREATES ORDER IN SUPABASE!
+  // Handle payment - NOW USES SAKURUPIAH!
   const handleProcessPayment = async () => {
     if (!selectedPayment) {
       toast.error('Pilih metode pembayaran terlebih dahulu')
-      return
-    }
-
-    if (!userId) {
-      toast.error('User ID diperlukan')
       return
     }
 
@@ -135,24 +144,82 @@ function CheckoutContent() {
 
       console.log('Order created:', order)
 
-      // 2. Create payment
-      const payment = await api.checkout(order.id, selectedPayment)
+      // 2. Create Sakurupiah invoice
+      const invoice = await createInvoice({
+        method: selectedPayment,
+        name: userId!,
+        email: 'guest@topupkilat.com', // TODO: Get from user if logged in
+        phone: '081234567890', // TODO: Get from user if logged in
+        amount: product.price,
+        merchant_ref: order.invoice_no,
+        expired: 24,
+        produk: [product.name],
+        qty: [1],
+        harga: [product.price],
+      })
 
-      console.log('Payment created:', payment)
+      console.log('Sakurupiah invoice:', invoice)
 
-      // 3. Update state
+      // 3. Save payment to Supabase
+      const paymentData = {
+        order_id: order.id,
+        method: selectedPayment,
+        amount: invoice.total,
+        status: 'PENDING',
+        provider_ref: invoice.trx_id,
+        merchant_ref: invoice.merchant_ref,
+        qr_url: invoice.qr || null,
+        checkout_url: invoice.checkout_url || null,
+        payment_no: invoice.payment_no ? String(invoice.payment_no) : null,
+        expired_at: invoice.expired,
+      }
+
+      await supabase.from('payments').insert(paymentData)
+
+      // 4. Set payment instructions based on payment type
+      // Convert our PaymentMethod to Sakurupiah format
+      const paymentTypeUpper = selectedPayment.toUpperCase()
+      const paymentType = paymentTypeUpper === 'QRIS' ? 'QRIS' :
+                         paymentTypeUpper.endsWith('VA') ? 'VA' : 'EWALLET'
+
+      setPaymentInstructions({
+        type: paymentType,
+        qrCode: invoice.qr,
+        paymentNo: invoice.payment_no ? String(invoice.payment_no) : undefined,
+        checkoutUrl: invoice.checkout_url || undefined,
+        instruction: getPaymentInstruction(selectedPayment),
+      })
+
+      // 5. Update state
       setInvoiceNo(order.invoice_no)
       setOrderId(order.id)
+      setSakurupiahInvoice(invoice)
 
-      // 4. Show success
+      // 6. Move to confirmation
       setIsProcessing(false)
       setStep('confirmation')
-      toast.success('Pembayaran berhasil!')
+      toast.success('Invoice dibuat! Selesaikan pembayaran.')
     } catch (error: any) {
       console.error('Checkout error:', error)
       setIsProcessing(false)
       toast.error(error.message || 'Terjadi kesalahan saat checkout')
     }
+  }
+
+  // Get payment instructions based on method
+  const getPaymentInstruction = (method: string): string => {
+    const instructions: Record<string, string> = {
+      QRIS: 'Scan kode QR menggunakan aplikasi bank atau e-wallet yang mendukung QRIS.',
+      BCAVA: 'Bayar melalui ATM BCA, mobile banking BCA, atau internet banking BCA.',
+      BRIVA: 'Bayar melalui ATM BRI, mobile banking BRI, atau internet banking BRI.',
+      BNIVA: 'Bayar melalui ATM BNI, mobile banking BNI, atau internet banking BNI.',
+      MANDIRIVA: 'Bayar melalui ATM Mandiri, mobile banking Mandiri, atau internet banking Mandiri.',
+      GOPAY: 'Akan diarahkan ke aplikasi GoPay untuk menyelesaikan pembayaran.',
+      DANA: 'Akan diarahkan ke aplikasi DANA untuk menyelesaikan pembayaran.',
+      SHOPEEPAY: 'Akan diarahkan ke aplikasi ShopeePay untuk menyelesaikan pembayaran.',
+      OVO: 'Akan diarahkan ke aplikasi OVO untuk menyelesaikan pembayaran.',
+    }
+    return instructions[method] || 'Ikuti instruksi pembayaran yang muncul.'
   }
 
   // Copy invoice
@@ -286,19 +353,99 @@ function CheckoutContent() {
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="bg-surface-primary rounded-2xl border border-white/5 p-6 text-center"
+                className="bg-surface-primary rounded-2xl border border-white/5 p-6"
               >
                 {/* Success Icon */}
-                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <CheckCircle className="w-10 h-10 text-green-400" />
+                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <Clock className="w-10 h-10 text-blue-400" />
                 </div>
 
-                <h2 className="text-2xl font-bold text-white mb-2">
-                  Pembayaran Berhasil!
+                <h2 className="text-2xl font-bold text-white mb-2 text-center">
+                  Invoice Dibuat!
                 </h2>
-                <p className="text-white/70 mb-6">
-                  Top up akan diproses dalam 1-5 menit setelah pembayaran terkonfirmasi.
+                <p className="text-white/70 mb-6 text-center">
+                  Selesaikan pembayaran sebelum {sakurupiahInvoice?.expired || '24 jam'}.
                 </p>
+
+                {/* Payment Instructions - QRIS */}
+                <AnimatePresence>
+                  {paymentInstructions?.type === 'QRIS' && paymentInstructions.qrCode && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-white rounded-2xl p-6 mb-6"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <QrCode className="w-5 h-5 text-gray-800" />
+                        <span className="font-semibold text-gray-800">Scan QR Code</span>
+                      </div>
+                      <div className="flex justify-center mb-4">
+                        <img
+                          src={paymentInstructions.qrCode}
+                          alt="QRIS Payment"
+                          className="w-64 h-64"
+                        />
+                      </div>
+                      <p className="text-sm text-gray-600 text-center">
+                        {paymentInstructions.instruction}
+                      </p>
+                    </motion.div>
+                  )}
+
+                  {/* Payment Instructions - Virtual Account */}
+                  {paymentInstructions?.type === 'VA' && paymentInstructions.paymentNo && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-dark-100 rounded-2xl p-6 mb-6"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <CreditCard className="w-5 h-5 text-primary-400" />
+                        <span className="font-semibold text-white">Nomor Virtual Account</span>
+                      </div>
+                      <div className="bg-white rounded-xl p-4 text-center">
+                        <p className="text-xs text-gray-500 mb-2">Nomor VA</p>
+                        <p className="text-2xl font-mono font-bold text-gray-800 tracking-wider">
+                          {paymentInstructions.paymentNo}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(paymentInstructions.paymentNo || '')}
+                        className="w-full mt-3 py-2 text-sm text-primary-400 hover:text-primary-300"
+                      >
+                        Salin Nomor VA
+                      </button>
+                      <p className="text-sm text-white/60 mt-4">
+                        {paymentInstructions.instruction}
+                      </p>
+                    </motion.div>
+                  )}
+
+                  {/* Payment Instructions - E-Wallet */}
+                  {paymentInstructions?.type === 'EWALLET' && paymentInstructions.checkoutUrl && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-dark-100 rounded-2xl p-6 mb-6"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <CreditCard className="w-5 h-5 text-primary-400" />
+                        <span className="font-semibold text-white">Metode E-Wallet</span>
+                      </div>
+                      <a
+                        href={paymentInstructions.checkoutUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block w-full py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white text-center rounded-xl font-medium hover:from-primary-500 hover:to-primary-400 transition-all"
+                      >
+                        Bayar Sekarang
+                      </a>
+                      <p className="text-sm text-white/60 mt-4">
+                        {paymentInstructions.instruction}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Invoice */}
                 <div className="bg-dark-100 rounded-xl p-4 mb-6">
@@ -313,20 +460,26 @@ function CheckoutContent() {
                     </button>
                   </div>
                   <p className="font-mono font-bold text-white text-lg">{invoiceNo}</p>
+                  <div className="mt-2 pt-2 border-t border-white/10 flex justify-between text-sm">
+                    <span className="text-white/50">Total Bayar</span>
+                    <span className="font-bold text-accent-cyan">
+                      {formatCurrency(sakurupiahInvoice?.total || product?.price || 0)}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Status Info */}
                 <div className="flex items-center justify-center gap-6 mb-6 text-sm">
-                  <div className="flex items-center gap-2 text-blue-400">
+                  <div className="flex items-center gap-2 text-yellow-400">
                     <Clock size={16} />
-                    <span>Sedang Diproses</span>
+                    <span>Menunggu Pembayaran</span>
                   </div>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex gap-4">
                   <Link href="/dashboard/riwayat" className="flex-1">
-                    <Button variant="primary" className="w-full">
+                    <Button variant="secondary" className="w-full">
                       Lihat Riwayat
                     </Button>
                   </Link>

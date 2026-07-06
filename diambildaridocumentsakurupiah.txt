@@ -1,0 +1,523 @@
+
+# CONTOH PEMBUATAN SIGNATURE
+<?php
+$api_id = "SANBOX-90976113"; // api ID merchant anda
+$data_method = "QRIS"; //BCAVA,BRIVA,BNIVA,GOPAY,DANA dll
+$merchant_ref = "d83heuie230948"; //kode unik merchant saat melakukan permintaan invoice baru
+$amount = "20000"; // total pembayaran
+$apikey = "SANBOX-snuNYFCZ9q7KhDPpWSTv7243YRUCSrC"; // apikey merchant anda
+
+$signature = hash_hmac('sha256', $api_id.$data_method.$merchant_ref.$amount,$apikey);
+
+//CONTOH OUTPUT
+//Signature: 3e06435796cca95a6ff734e6d664a6d4cf06cca9d7c6cc3023622b3ab8e09840
+?>
+
+
+=================================
+
+
+# CONTOH REQUEST PERMINTAAN CHANNEL PEMBAYARAN
+<?php
+$curl = curl_init();
+curl_setopt_array($curl, array(
+CURLOPT_URL => 'https://sakurupiah.id/api-sanbox/list-payment.php',
+CURLOPT_RETURNTRANSFER => true,
+CURLOPT_ENCODING => '',
+CURLOPT_MAXREDIRS => 10,
+CURLOPT_TIMEOUT => 0,
+CURLOPT_FOLLOWLOCATION => true,
+CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+CURLOPT_CUSTOMREQUEST => 'POST',
+CURLOPT_POSTFIELDS => array('api_id' => 'SANBOX-90976113','method' => 'list'),
+CURLOPT_HTTPHEADER => array(
+'Authorization: Bearer SANBOX-snuNYFCZ9q7KhDPpWSTv7243YRUCSrC'
+),
+));
+$response = curl_exec($curl);
+curl_close($curl);
+echo $response;
+?>
+
+==============================
+
+
+# RESPONSE 200 BERHASIL
+
+{
+    "status": "200",
+    "message": "success",
+    "data": [
+        {
+            "kode": "QRIS",
+            "nama": "QRIS",
+            "minimal": "500",
+            "maksimal": "2000000",
+            "biaya": "0.7",
+            "percent": "Percent",
+            "tipe": "DIRECT",
+            "logo": "https://sakurupiah.id/assets/img/payment/QRIS.png",
+            "status": "Aktif",
+            "addition": {
+                "tambahan_biaya": "350",
+                "jenis": "Nominal",
+                "default_expired": "24",
+                "settlement": "Settlement H+1"
+            },
+            "guide": {
+                "title": "Cara Melakukan Pembayaran QRIS",
+                "payment_guide": "1.Buka aplikasi pembayaran yang mendukung pembayaran menggunakan QRIS.\n         2.Pilih fitur QRIS Bayar.\n         3.Pindai kode QR yang diberikan oleh Merchant.\n         4.Pastikan tagihan yang ditagihkan sesuai dengan invoice.\n         5.Klik tombol konfirmasi pembayaran.\n         6.Masukkan PIN untuk menyelesaikan pembayaran.\n         7.Setelah pembayaran berhasil, kamu akan dialihkan ke Halaman Hasil Pembayaran.\n         8.Pembayaran selesai."
+            }
+        },
+        {
+            "kode": "ShopeePay",
+            "nama": "ShopeePay",
+            "minimal": "1000",
+            "maksimal": "2000000",
+            "biaya": "3",
+            "percent": "Percent",
+            "tipe": "REDIRECT",
+            "logo": "https://sakurupiah.id/assets/img/payment/SHOPPEPAY.png",
+            "status": "Aktif",
+            "addition": {
+                "tambahan_biaya": "0",
+                "jenis": "Nominal",
+                "default_expired": "1",
+                "settlement": "Settlement H+1"
+            },
+            "guide": {
+                "title": "Cara Melakukan Pembayaran ShopeePay",
+                "payment_guide": ""
+            }
+        },
+        {
+            "kode": "DANA",
+            "nama": "DANA E-Wallet",
+            "minimal": "1000",
+            "maksimal": "2000000",
+            "biaya": "3",
+            "percent": "Percent",
+            "tipe": "REDIRECT",
+            "logo": "https://sakurupiah.id/assets/img/payment/DANA.png",
+            "status": "Aktif",
+            "addition": {
+                "tambahan_biaya": "0",
+                "jenis": "Nominal",
+                "default_expired": "1",
+                "settlement": "Settlement H+1"
+            },
+            "guide": {
+                "title": "Cara Melakukan Pembayaran DANA E-Wallet",
+                "payment_guide": "1. Buka aplikasi DANA di ponsel Anda.\r\n2. Masukan nomor Hanphone DANA yang terdaftar lalu buka notifikasi pembayaran yang masuk.\r\n3. Pastikan Nominal Pembayaran Sesuai Dengan Jumlah Pembayaran anda.\r\n4. Klik Lanjutkan.\r\n5. Masukan PIN DANA Anda.\r\n6. Konfirmasi pembayaran dan tunggu prosesnya selesai."
+            }
+        },
+        {
+            "kode": "BCAVA",
+            "nama": "BCA Virtual-Account",
+            "minimal": "10000",
+            "maksimal": "20000000",
+            "biaya": "5500",
+            "percent": "Nominal",
+            "tipe": "DIRECT",
+            "logo": "https://sakurupiah.id/assets/img/payment/BCA.png",
+            "status": "Aktif",
+            "addition": {
+                "tambahan_biaya": "0",
+                "jenis": "Nominal",
+                "default_expired": "3",
+                "settlement": "Settlement H+2 - H+3"
+            },
+            "guide": {
+                "title": "Cara Melakukan Pembayaran BCA Virtual-Account",
+                "payment_guide": "1. Melalui ATM BCA:\r\n- Masukkan kartu ATM dan PIN.\r\n- Pilih menu \"Transaksi Lainnya\".\r\n- Pilih \"Transfer\".\r\n- Pilih \"Ke Rek BCA Virtual Account\".\r\n- Masukkan nomor Virtual Account.\r\n- Cek detail pembayaran dan pilih \"Ya\" jika sesuai.\r\n- Simpan struk transaksi sebagai bukti. \r\n2. Melalui myBCA (Mobile Banking):\r\n- Login ke aplikasi myBCA.\r\n- Pilih menu \"Transfer\".\r\n- Pilih \"BCA Virtual Account\".\r\n- Masukkan nomor Virtual Account.\r\nCek detail pembayaran dan pilih \"Kirim\".\r\n- Input PIN BCA dan transaksi selesai. "
+            }
+        }
+    ]
+}
+
+============================
+
+
+# CONTOH REQUEST PERMINTAAN CEK SALDO
+<?php
+$curl = curl_init();
+curl_setopt_array($curl, array(
+CURLOPT_URL => 'https://sakurupiah.id/api-sanbox/check_balance.php',
+CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => '',
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 0,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => 'POST',
+  CURLOPT_POSTFIELDS => array('api_id' => 'SANBOX-90976113','method' => 'balance'),
+  CURLOPT_HTTPHEADER => array(
+    'Authorization: Bearer SANBOX-snuNYFCZ9q7KhDPpWSTv7243YRUCSrC'
+  ),
+));
+
+$response = curl_exec($curl);
+
+curl_close($curl);
+echo $response;
+?>
+
+
+=============================
+
+
+# RESPONSE 200 BERHASIL
+
+#CATATAN : Mode produksi 
+
+{
+    "status": "200",
+    "message": "success",
+    "data": {
+        "nama_merchant": "SANBOX MERCHANT NAME",
+        "balance": "50000", // di ambil dari data trx berhasil yang masih dalam setlement sesuai data merchant
+        "saldo_tersedia": "1050000" // di ambil dari keseluruhan saldo merchant yang terdaftar yang sudah masuk ke dalam saldo tersedia
+    }
+}
+
+==============================
+
+
+# CONTOH REQUEST PERMINTAAN MEMBUAT INVOICE BARU
+<?php
+
+$data = array(
+    'api_id'       => 'SANBOX-90976113',
+    'method'       => 'BCAVA',
+    'name'         => 'nama pembeli',
+    'email'        => 'emailpembeli@gmail.com',
+    'phone'        => '6283191910986',
+    'amount'       => '20000',
+    'merchant_fee' => '1',
+    'merchant_ref' => 'd834Hd-dj83kdk-38479f877HFH3s',
+    'expired'      => '24',
+    'produk'       => ['produk 1', 'produk 2'],
+    'qty'          => [1, 6],
+    'harga'        => [45000, 25000],
+    'size'         => ['XL', 'XXL'],
+    'note'         => ['Baju warna biru', 'Warna merah'],
+    'callback_url' => 'https://domain.com/callback',                      
+    'return_url'   => 'https://domain.com/invoice',
+    'signature'    => '38bb508e14f206fbad92ef6007f3cfe126746bfb8f5ff272e738d85d7a56ddc5' //Contoh hasil signature
+);
+
+
+$curl = curl_init();
+
+curl_setopt_array($curl, array(
+  CURLOPT_URL => 'https://sakurupiah.id/api-sanbox/create.php',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => '',
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 0,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => 'POST',
+  CURLOPT_POSTFIELDS => http_build_query($data),
+  CURLOPT_HTTPHEADER => array(
+    'Authorization: Bearer SANBOX-snuNYFCZ9q7KhDPpWSTv7243YRUCSrC'
+  ),
+));
+
+$response = curl_exec($curl);
+
+curl_close($curl);
+echo $response;
+
+?>
+
+==========================
+
+
+# RESPONSE 200 BERHASIL
+
+{
+    "status": "200",
+    "message": "success",
+    "data": [
+        {
+            "via": "BCA Virtual-Account",
+            "payment_kode": "BCAVA",
+            "trx_id": "SBXjZgi0srfY-D2qLe4Ohd-CKni124",
+            "merchant_ref": "d834Hd-dj83kdk-38479f877HFH3s",
+            "nama": "nama pembeli",
+            "email": "emailpembeli@gmail.com",
+            "phone": "6283191910986",
+            "total": 20000,
+            "merchant_fee": "Merchant",
+            "fee": 0,
+            "amount_merchant": 14500,
+            "date": "2025-05-26",
+            "time": "03:24:09",
+            "expired": "2025-05-26 06:24:09",
+            "payment_status": "pending",
+            "qr": "string QRIS",   //Khusus untuk kode pembayaran QRIS
+            "payment_no": 2116127211,
+            "checkout_url": "https://invoice-sakurupiah.id=?kd930933==xxxxxx"
+        }
+    ],
+    "produk": [
+        {
+            "nama_produk": "produk 1",
+            "qty": "1",
+            "harga": 45000,
+            "size": "XL",
+            "note": "Baju warna biru"
+        },
+        {
+            "nama_produk": "produk 2",
+            "qty": "6",
+            "harga": 25000,
+            "size": "XXL",
+            "note": "Warna merah"
+        }
+    ]
+}
+============================
+
+
+# CONTOH PERMINTAAN MENGECEK RIWAYAT TRANSAKSI
+<?php
+
+$curl = curl_init();
+
+curl_setopt_array($curl, array(
+  CURLOPT_URL => 'https://sakurupiah.id/api-sanbox/transaction.php',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => '',
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 0,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => 'POST',
+  CURLOPT_POSTFIELDS => array(
+    'api_id' => 'SANBOX-90976113',
+    'method' => 'transaction',
+    'mechant' => '1',
+    'payment_kode' => 'BCAVA',
+    'trx_id' => 'SBX59oUGlLWk-lfzYZUK7a-eVkwQNL320',
+    'merchant_ref' => 'd834Hd-dj83kdk-38479freHFH3',
+    'status' => 'pending',
+    'tanggal_awal' => '2025-05-05',
+    'tanggal_akhir' => '2025-05-09'),
+  CURLOPT_HTTPHEADER => array(
+    'Authorization: Bearer SANBOX-snuNYFCZ9q7KhDPpWSTv7243YRUCSrC'
+  ),
+));
+
+$response = curl_exec($curl);
+
+curl_close($curl);
+echo $response;
+?>
+
+=============================
+
+
+# RESPON 200 BERHASIL
+{
+    "status": "200",
+    "message": "success",
+    "data": [
+        {   
+            "trx_id": "PDC2wjfkd8FN-MZ1ZJ7YyJQ-0m805",
+            "merchant_ref": "436432392",
+            "payment_kode": "BCAVA",
+            "tanggal": "2025-05-26",
+            "waktu": "03:34:39",
+            "amount": "25000",
+            "expired": "2025-05-26 06:34:39",
+            "status": "berhasil"
+        },
+        {   
+            "trx_id": "PDC249645-kmdUIUD8948-4i989",
+            "merchant_ref": "JHDGndfk98y9uiUI",
+            "payment_kode": "BCAVA",
+            "tanggal": "2025-05-26",
+            "waktu": "03:24:09",
+            "amount": "20000",
+            "expired": "2025-05-26 06:24:09",
+            "status": "berhasil"
+        },
+        {   
+            "trx_id": "PDC2wjOseREFN-84jdfjd-jddg4654",
+            "merchant_ref": "jsdfj4-84hd84-ejrfu4",
+            "payment_kode": "QRIS",
+            "tanggal": "2025-05-25",
+            "waktu": "01:47:26",
+            "amount": "171000",
+            "expired": "2025-05-26 01:47:26",
+            "status": "berhasil"
+        },
+        {  
+            "trx_id": "PDC495kiJDI84-358j45",
+            "merchant_ref": "djfk84494vfe4rf44",
+            "payment_kode": "BCAVA",
+            "tanggal": "2025-05-25",
+            "waktu": "01:45:13",
+            "amount": "20000",
+            "expired": "2025-05-25 04:45:13",
+            "status": "expired"
+        },
+        {
+            "trx_id": "PDC2wjOj8JF-464-4985jjk4et5ri",
+            "merchant_ref": "hgt5575u75475",
+            "payment_kode": "DANA",
+            "tanggal": "2025-05-25",
+            "waktu": "01:42:25",
+            "amount": "5150",
+            "expired": "2025-05-25 02:42:25",
+            "status": "berhasil"
+        },
+        {
+            "trx_id": "PDC2wjOseREFN-dfg4u-dft48",
+            "merchant_ref": "436476y547854",
+            "payment_kode": "QRIS",
+            "tanggal": "2025-05-25",
+            "waktu": "01:41:43",
+            "amount": "3250",
+            "expired": "2025-05-25 02:41:43",
+            "status": "pending"
+        }
+    ]
+}
+
+============================
+
+# CONTOH PERMINTAAN CEK STATUS
+<?php
+
+$curl = curl_init();
+
+curl_setopt_array($curl, array(
+  CURLOPT_URL => 'https://sakurupiah.id/api-sanbox/status-transaction.php',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => '',
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 0,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => 'POST',
+  CURLOPT_POSTFIELDS => array('api_id' => 'SANBOX-90976113','method' => 'status','trx_id' => 'SBXFsYv6tlHl-Tm8faWdA5-Jj0jXfb785'),
+  CURLOPT_HTTPHEADER => array(
+    'Authorization: Bearer SANBOX-snuNYFCZ9q7KhDPpWSTv7243YRUCSrC'
+  ),
+));
+
+$response = curl_exec($curl);
+
+curl_close($curl);
+echo $response;
+
+?>
+
+========================
+
+
+# RESPON 200 BERHASIL
+{
+    "status": "200",
+    "message": "success",
+    "data": [
+        {
+            "status": "berhasil"
+        }
+    ]
+}
+
+=============================
+
+
+#Handle Callback
+<?php
+//Koneksi database anda
+
+// Ambil data JSON
+$json = file_get_contents('php://input');
+
+// Ambil callback signature
+$callbackSignature = isset($_SERVER['HTTP_X_CALLBACK_SIGNATURE'])
+    ? $_SERVER['HTTP_X_CALLBACK_SIGNATURE']
+    : '';
+
+// Isi dengan api key merchant anda
+$apiKey = "API_KEY ANDA";
+
+// Generate signature untuk dicocokkan dengan X-Callback-Signature
+$signature = hash_hmac('sha256', $json, $apiKey);
+
+// Validasi signature
+if ($callbackSignature !== $signature) {
+    exit(json_encode([
+        'success' => false,
+        'message' => 'Invalid signature',
+    ]));
+}
+
+try {
+    
+$data = json_decode($json);
+
+if (JSON_ERROR_NONE !== json_last_error()) {
+    exit(json_encode([
+        'success' => false,
+        'message' => 'Invalid data send by payment gateway',
+    ]));
+}
+
+// Hentikan proses jika callback event-nya bukan payment_status
+if ('payment_status' !== $_SERVER['HTTP_X_CALLBACK_EVENT']) {
+    exit(json_encode([
+        'success' => false,
+        'message' => 'Unrecognized callback event: ' . $_SERVER['HTTP_X_CALLBACK_EVENT'],
+    ]));
+}
+
+// Mengambil data callback
+$payment_TrxID = $data->trx_id;
+$payment_MerchantRef = $data->merchant_ref;
+$payment_Status = $data->status;
+$payment_StatusKode = $data->status_kode;
+
+
+if ($data->status == "berhasil" and $payment_StatusKode == 1) {
+    
+    //Lakukan sesuatu jika transaksi berhasil contoh seperti updated status transaksi pada database anda dll
+    
+    exit(json_encode([
+            'success' => true,
+            'message' => 'Payment status berhasil',
+        ]));
+        
+} else if (($data->status == "expired" and $payment_StatusKode == 2)) {
+    
+    //Lakukan sesuatu jika transaksi expired / kadaluarsa contoh seperti updated status transaksi pada database anda dll
+    
+    exit(json_encode([
+            'success' => true,
+            'message' => 'Payment status expired',
+        ]));
+        
+} else if (($data->status == "pending" and $payment_StatusKode == 0)) {
+    
+    //Jika status pending mungkin ada beberapa aksi yang ingin di lakukan tambahkan disini atau abaikan jika tidak ada aksi ketika status tetap pending biarkan cukup respon json yang di simpan
+    
+    exit(json_encode([
+            'success' => true,
+            'message' => 'Payment status pending',
+        ]));
+        
+} else {
+    
+   throw new Exception('Error Data Status Callback');
+}
+} catch (Exception $e) {
+exit(json_encode(['success' => false, 'message' => $e->getMessage()]));
+}
+
+?>
