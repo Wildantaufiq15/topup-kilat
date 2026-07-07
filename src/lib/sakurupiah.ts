@@ -206,6 +206,7 @@ export async function createInvoice(
     expired: expired.toString(),
     signature,
     callback_url: CALLBACK_URL || 'https://topup-kilat-chi.vercel.app/api/callback/sakurupiah',
+    return_url: params.return_url || 'https://topup-kilat-chi.vercel.app/checkout/success',
   }
 
   // Add product details if provided
