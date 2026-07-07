@@ -45,8 +45,9 @@ export async function POST(request: NextRequest) {
     // Create invoice with Sakurupiah (simplified - only required fields)
     let invoice
     try {
+      // Convert method to uppercase (Sakurupiah expects uppercase codes like 'QRIS', 'BCAVA', etc.)
       invoice = await createInvoice({
-        method,
+        method: method.toUpperCase(),
         name: userName || 'Customer',
         email: userEmail || 'guest@topupkilat.com',
         phone: userPhone || '081234567890',
