@@ -32,9 +32,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Convert method to uppercase (Sakurupiah expects uppercase)
+    const upperMethod = method.toUpperCase()
+
     console.log('Creating Sakurupiah invoice for order:', orderId)
     console.log('Request payload:', {
-      method,
+      method: upperMethod,
       name: userName || 'Customer',
       email: userEmail || 'guest@topupkilat.com',
       phone: userPhone || '081234567890',
@@ -42,12 +45,11 @@ export async function POST(request: NextRequest) {
       merchant_ref: `TK-${orderId.slice(0, 8)}-${Date.now()}`,
     })
 
-    // Create invoice with Sakurupiah (simplified - only required fields)
+    // Create invoice with Sakurupiah
     let invoice
     try {
-      // Convert method to uppercase (Sakurupiah expects uppercase codes like 'QRIS', 'BCAVA', etc.)
       invoice = await createInvoice({
-        method: method.toUpperCase(),
+        method: upperMethod,
         name: userName || 'Customer',
         email: userEmail || 'guest@topupkilat.com',
         phone: userPhone || '081234567890',
@@ -56,7 +58,6 @@ export async function POST(request: NextRequest) {
       })
     } catch (apiError: any) {
       console.error('Sakurupiah API Error:', apiError.message)
-      // Return more detailed error
       return NextResponse.json(
         { success: false, message: `Sakurupiah Error: ${apiError.message}` },
         { status: 400 }
@@ -66,9 +67,9 @@ export async function POST(request: NextRequest) {
     console.log('Sakurupiah invoice created:', invoice)
 
     // Save payment to Supabase
-    const { error: paymentError } = await supabase.from('payments').insert({
+    const paymentData = {
       order_id: orderId,
-      method,
+      method: upperMethod,
       amount: invoice.total,
       status: 'PENDING',
       provider_ref: invoice.trx_id,
@@ -77,12 +78,15 @@ export async function POST(request: NextRequest) {
       checkout_url: invoice.checkout_url || null,
       payment_no: invoice.payment_no ? String(invoice.payment_no) : null,
       expired_at: invoice.expired,
-    })
+    }
+    console.log('Saving payment data:', JSON.stringify(paymentData, null, 2))
+
+    const { error: paymentError } = await supabase.from('payments').insert(paymentData)
 
     if (paymentError) {
-      console.error('Error saving payment:', paymentError)
+      console.error('Error saving payment:', JSON.stringify(paymentError, null, 2))
       return NextResponse.json(
-        { success: false, message: 'Failed to save payment' },
+        { success: false, message: `Failed to save payment: ${paymentError.message}`, details: paymentError },
         { status: 500 }
       )
     }
