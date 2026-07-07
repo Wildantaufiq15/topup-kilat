@@ -86,18 +86,18 @@ export async function POST(request: NextRequest) {
     // Generate UUID for payment id
     const paymentId = crypto.randomUUID()
 
-    // Map to actual Supabase schema (Prisma-style column names)
+    // Map to actual Supabase schema (snake_case as per Database types)
     const paymentData = {
       id: paymentId,
-      orderId: orderId,
-      method: sakurupiahMethod as any, // Cast to match ENUM
+      order_id: orderId,
+      method: sakurupiahMethod,
       amount: invoice.total,
       status: 'PENDING',
-      providerRef: invoice.trx_id,
-      paymentUrl: invoice.checkout_url || null,
-      qrCode: invoice.qr || null,
-      vaNumber: invoice.payment_no ? String(invoice.payment_no) : null,
-      expiredAt: invoice.expired,
+      provider_ref: invoice.trx_id,
+      payment_url: invoice.checkout_url || null,
+      qr_code: invoice.qr || null,
+      va_number: invoice.payment_no ? String(invoice.payment_no) : null,
+      expired_at: invoice.expired,
     }
     console.log('Saving payment data:', JSON.stringify(paymentData, null, 2))
 
