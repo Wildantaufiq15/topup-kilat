@@ -19,6 +19,23 @@ interface CreatePaymentRequest {
   userPhone: string
 }
 
+// Map our method format to Sakurupiah format
+function mapPaymentMethod(method: string): string {
+  const mapping: Record<string, string> = {
+    'qris': 'QRIS',
+    'gopay': 'GOPAY',
+    'ovo': 'OVO',
+    'dana': 'DANA',
+    'shopeepay': 'SHOPEEPAY',
+    'bcava': 'BCAVA',
+    'bniva': 'BNIVA',
+    'mandiriva': 'MANDIRIVA',
+    'briva': 'BRIVA',
+    'permatava': 'PERMATAVA',
+  }
+  return mapping[method.toLowerCase()] || method.toUpperCase()
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: CreatePaymentRequest = await request.json()
@@ -32,12 +49,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Convert method to uppercase (Sakurupiah expects uppercase)
-    const upperMethod = method.toUpperCase()
+    // Map method to Sakurupiah format (uppercase)
+    const sakurupiahMethod = mapPaymentMethod(method)
 
     console.log('Creating Sakurupiah invoice for order:', orderId)
     console.log('Request payload:', {
-      method: upperMethod,
+      method: sakurupiahMethod,
       name: userName || 'Customer',
       email: userEmail || 'guest@topupkilat.com',
       phone: userPhone || '081234567890',
@@ -49,7 +66,7 @@ export async function POST(request: NextRequest) {
     let invoice
     try {
       invoice = await createInvoice({
-        method: upperMethod,
+        method: sakurupiahMethod,
         name: userName || 'Customer',
         email: userEmail || 'guest@topupkilat.com',
         phone: userPhone || '081234567890',
@@ -66,18 +83,21 @@ export async function POST(request: NextRequest) {
 
     console.log('Sakurupiah invoice created:', invoice)
 
-    // Save payment to Supabase
+    // Generate UUID for payment id
+    const paymentId = crypto.randomUUID()
+
+    // Map to actual Supabase schema (Prisma-style column names)
     const paymentData = {
-      order_id: orderId,
-      method: upperMethod,
+      id: paymentId,
+      orderId: orderId,
+      method: sakurupiahMethod as any, // Cast to match ENUM
       amount: invoice.total,
       status: 'PENDING',
-      provider_ref: invoice.trx_id,
-      merchant_ref: invoice.merchant_ref,
-      qr_url: invoice.qr || null,
-      checkout_url: invoice.checkout_url || null,
-      payment_no: invoice.payment_no ? String(invoice.payment_no) : null,
-      expired_at: invoice.expired,
+      providerRef: invoice.trx_id,
+      paymentUrl: invoice.checkout_url || null,
+      qrCode: invoice.qr || null,
+      vaNumber: invoice.payment_no ? String(invoice.payment_no) : null,
+      expiredAt: invoice.expired,
     }
     console.log('Saving payment data:', JSON.stringify(paymentData, null, 2))
 
