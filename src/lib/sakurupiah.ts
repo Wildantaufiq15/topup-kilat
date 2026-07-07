@@ -205,6 +205,7 @@ export async function createInvoice(
     merchant_fee: 'Merchant', // Who pays fee: "Merchant" or "Customer"
     expired: expired.toString(),
     signature,
+    callback_url: CALLBACK_URL || 'https://topup-kilat-chi.vercel.app/api/callback/sakurupiah',
   }
 
   // Add product details if provided
