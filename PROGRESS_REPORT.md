@@ -1,8 +1,8 @@
 # 📊 Progress Report - Topup Kilat
 
 **Tanggal:** 9 Juli 2026
-**Status:** 🎉 Fase 8 - Admin Panel COMPLETE!
-**Versi:** 4.0.0
+**Status:** ⏸️ Fase 9 - Menunggu VPS DomaiNesia
+**Versi:** 4.1.0
 
 ---
 
@@ -208,7 +208,7 @@ Digiflazz requires IP whitelist for API access, but Vercel uses dynamic IPs.
 #### Solution - Hybrid Architecture:
 
 ```
-User → Vercel (Frontend) → Hetzner VPS (Proxy) → Digiflazz API
+User → Vercel (Frontend) → VPS Proxy (Static IP) → Digiflazz API
 ```
 
 | Service | Provider | Purpose |
@@ -216,43 +216,91 @@ User → Vercel (Frontend) → Hetzner VPS (Proxy) → Digiflazz API
 | Frontend | Vercel (existing) | Website, Admin Panel |
 | Database | Supabase (existing) | Data storage |
 | Payment | Sakurupiah (existing) | Payment gateway |
-| Proxy | Hetzner VPS (NEW) | Digiflazz API with static IP |
+| Proxy | VPS (NEW) | Digiflazz API with static IP |
 | Domain | Custom (NEW) | Custom domain for branding |
 
-### Hetzner Cloud Setup:
+### VPS Provider: DomaiNesia
 
 | Detail | Info |
 |--------|------|
-| Website | https://www.hetzner.com/cloud/ |
-| Region | Singapore (closest to Indonesia) |
-| Starting Price | €3.50/bulan (~Rp 60rb) |
-| Spek | 1 vCPU, 2GB RAM, 20GB SSD |
-| Static IP | ✅ Included |
-| Bandwidth | 20 TB traffic free |
+| Website | https://www.domainesia.com |
+| Paket | Cloud VPS Lite 1GB |
+| Harga | **Rp 48.000/bulan** |
+| CPU | 1 Core |
+| RAM | 1 GB |
+| Storage | 20 GB SSD NVMe |
+| IP | **Dedicated (Static!)** ✅ |
+| Bandwidth | Unlimited |
+| OS | Ubuntu 24.04 |
+| Bayar | Transfer bank, minimarket, dll |
 
 ### Estimated Monthly Cost:
 
 | Item | Price |
 |------|-------|
-| Hetzner Cloud | Rp 60.000 |
-| Domain | Rp 1.500 (Rp 18.000/tahun) |
-| **Total** | **~Rp 62.000/bulan** |
+| VPS DomaiNesia | Rp 48.000 |
+| Domain | Rp 2.000 |
+| **Total** | **~Rp 50.000/bulan** |
 
-### Setup Plan:
+### VPS Alternatives (if needed):
 
-1. [ ] Register Hetzner Cloud → https://www.hetzner.com/cloud/
-2. [ ] Choose Singapore region
-3. [ ] Create VPS with Ubuntu
-4. [ ] Setup proxy script for Digiflazz
-5. [ ] Whitelist Hetzner VPS IP in Digiflazz dashboard
-6. [ ] Point custom domain to Vercel
-7. [ ] Test full flow
+| Provider | Harga/Bulan | Notes |
+|----------|-------------|-------|
+| Oracle Cloud | GRATIS | Butuh kartu kredit |
+| Hetzner | Rp 60.000 | Butuh VAT ID |
+| Niagahoster | Rp 150.000 | Lebih mahal |
+
+### Setup Plan (After VPS Active):
+
+1. [x] Register VPS → https://www.domainesia.com
+2. [ ] Setup Ubuntu 24.04
+3. [ ] Create Digiflazz proxy script
+4. [ ] Whitelist VPS IP in Digiflazz dashboard
+5. [ ] Update Vercel env for new proxy URL
+6. [ ] Test full flow
+7. [ ] Point custom domain to Vercel (optional)
 
 ### Files for Proxy (Already Created):
 
 | File | Fungsi |
 |------|--------|
-| `workers/digiflazz-proxy.js` | Cloudflare Worker template for proxy |
+| `workers/digiflazz-proxy.js` | Proxy template for Digiflazz API |
+
+---
+
+## 📝 Action Items - DomaiNesia VPS
+
+- [ ] Daftar DomaiNesia: https://www.domainesia.com/cloud-vps-lite/
+- [ ] Pilih paket: Cloud VPS Lite 1GB (Rp 48.000/bulan)
+- [ ] Pilih OS: Ubuntu 24.04
+- [ ] Bayar dan tunggu VPS aktif
+- [ ] Catat IP VPS
+- [ ] Kabari untuk setup proxy
+
+### Info yang Perlu Dicatat Setelah VPS Aktif:
+1. **IP VPS:** `xxx.xxx.xxx.xxx`
+2. **Username:** (default: root)
+3. **Password:** (dikirim via email)
+
+---
+
+## 🎯 Next Steps - Future Enhancements
+
+### High Priority
+1. **Digiflazz Integration** - Setup VPS proxy (PENDING)
+2. **Email Notifications** - Butuh server dengan IP static
+3. **Custom Domain** - Branding untuk production
+
+### Medium Priority
+1. Invoice PDF download
+2. Google Analytics integration
+3. WhatsApp notifications
+4. Real-time order status
+
+### Low Priority
+1. Mobile app
+2. Affiliate program
+3. Multi-language support
 
 ---
 
@@ -400,4 +448,5 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
 ---
 
 *Admin Panel completed! Ready for production with supplier integration.*
+*DomaiNesia VPS selected for Digiflazz proxy (Rp 48.000/bulan)*
 *Dokumen ini diupdate pada: 9 Juli 2026*
