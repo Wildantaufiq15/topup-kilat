@@ -99,6 +99,7 @@ export type Database = {
           amount: number
           status: 'PENDING' | 'PAID' | 'EXPIRED' | 'FAILED'
           provider_ref: string | null
+          merchant_ref: string | null  // Added for webhook lookup
           payment_url: string | null
           qr_code: string | null
           va_number: string | null

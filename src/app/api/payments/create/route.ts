@@ -94,6 +94,7 @@ export async function POST(request: NextRequest) {
       amount: invoice.total,
       status: 'PENDING',
       provider_ref: invoice.trx_id,
+      merchant_ref: invoice.merchant_ref, // Add merchant_ref for webhook lookup
       payment_url: invoice.checkout_url || null,
       qr_code: invoice.qr || null,
       va_number: invoice.payment_no ? String(invoice.payment_no) : null,
@@ -113,6 +114,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      paymentId: paymentId, // Return payment ID for status polling
       data: {
         trx_id: invoice.trx_id,
         merchant_ref: invoice.merchant_ref,

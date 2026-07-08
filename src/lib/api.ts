@@ -246,6 +246,16 @@ class ApiClient {
 
   // ==================== PAYMENTS ====================
 
+  async getPayment(paymentId: string) {
+    const { data, error } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('id', paymentId)
+      .single();
+    if (error) return { data: null, error: error.message };
+    return { data, error: null };
+  }
+
   async checkout(orderId: string, paymentMethod: string) {
     // Get order
     const { data: order } = await supabase.from('orders').select('*').eq('id', orderId).single();

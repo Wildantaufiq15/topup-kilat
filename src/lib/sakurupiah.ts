@@ -3,7 +3,7 @@
  * Documentation: https://sakurupiah.id/developers/api-dokumentasi
  */
 
-const API_URL = process.env.SAKURUPIAH_API_URL || 'https://sakurupiah.id/api-sanbox'
+const API_URL = process.env.SAKURUPIAH_API_URL || 'https://sakurupiah.id/api'
 const API_ID = process.env.SAKURUPIAH_API_ID || ''
 const API_KEY = process.env.SAKURUPIAH_API_KEY || ''
 const CALLBACK_URL = process.env.SAKURUPIAH_CALLBACK_URL || ''

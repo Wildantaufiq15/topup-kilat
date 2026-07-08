@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState, useEffect } from 'react'
+import { Suspense, useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -23,6 +23,9 @@ import {
   AlertCircle,
   QrCode,
   CreditCard,
+  RefreshCw,
+  PartyPopper,
+  XCircle,
 } from 'lucide-react'
 
 const checkoutSteps = [
@@ -30,6 +33,9 @@ const checkoutSteps = [
   { id: 'payment', label: 'Pembayaran' },
   { id: 'confirmation', label: 'Selesai' },
 ]
+
+// Storage key for checkout state persistence
+const CHECKOUT_STATE_KEY = 'topupkilat_checkout_state'
 
 function CheckoutContent() {
   const searchParams = useSearchParams()
@@ -54,6 +60,7 @@ function CheckoutContent() {
   const [invoiceNo, setInvoiceNo] = useState('')
   const [copied, setCopied] = useState(false)
   const [orderId, setOrderId] = useState('')
+  const [paymentId, setPaymentId] = useState('')
 
   // Payment state
   const [paymentInstructions, setPaymentInstructions] = useState<{
@@ -68,9 +75,77 @@ function CheckoutContent() {
     total: number
   } | null>(null)
 
+  // Payment status polling
+  const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid' | 'failed' | 'expired'>('pending')
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false)
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Save state to sessionStorage
+  const saveCheckoutState = useCallback(() => {
+    if (typeof window === 'undefined') return
+    const state = {
+      step,
+      selectedPayment,
+      invoiceNo,
+      orderId,
+      paymentId,
+      paymentInstructions,
+      invoiceData,
+      gameSlug,
+      productId,
+      userId,
+      serverId,
+      voucherCode,
+    }
+    sessionStorage.setItem(CHECKOUT_STATE_KEY, JSON.stringify(state))
+  }, [step, selectedPayment, invoiceNo, orderId, paymentId, paymentInstructions, invoiceData, gameSlug, productId, userId, serverId, voucherCode])
+
+  // Load state from sessionStorage
+  const loadCheckoutState = useCallback(() => {
+    if (typeof window === 'undefined') return null
+    const saved = sessionStorage.getItem(CHECKOUT_STATE_KEY)
+    if (!saved) return null
+    try {
+      return JSON.parse(saved)
+    } catch {
+      return null
+    }
+  }, [])
+
+  // Clear checkout state
+  const clearCheckoutState = useCallback(() => {
+    if (typeof window === 'undefined') return
+    sessionStorage.removeItem(CHECKOUT_STATE_KEY)
+    // Clear polling
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current)
+      pollingIntervalRef.current = null
+    }
+  }, [])
+
   // Fetch game and product data from Supabase
   useEffect(() => {
     async function fetchData() {
+      // First check if we have saved state
+      const savedState = loadCheckoutState()
+
+      if (savedState && savedState.gameSlug === gameSlug && savedState.productId === productId) {
+        // Restore state
+        console.log('Restoring checkout state from sessionStorage')
+        setStep(savedState.step)
+        setSelectedPayment(savedState.selectedPayment)
+        setInvoiceNo(savedState.invoiceNo)
+        setOrderId(savedState.orderId)
+        setPaymentId(savedState.paymentId)
+        setPaymentInstructions(savedState.paymentInstructions)
+        setInvoiceData(savedState.invoiceData)
+
+        // If was on confirmation step, start polling
+        if (savedState.step === 'confirmation' && savedState.paymentId) {
+          setStep('confirmation')
+        }
+      }
+
       if (!gameSlug || !productId) {
         setIsLoading(false)
         return
@@ -94,7 +169,7 @@ function CheckoutContent() {
     }
 
     fetchData()
-  }, [gameSlug, productId])
+  }, [gameSlug, productId, loadCheckoutState])
 
   // Determine initial step when auth is ready
   useEffect(() => {
@@ -103,6 +178,71 @@ function CheckoutContent() {
       setStep('payment')
     }
   }, [authLoading, isAuthenticated])
+
+  // Save state whenever it changes
+  useEffect(() => {
+    if (step !== 'identify') {
+      saveCheckoutState()
+    }
+  }, [step, saveCheckoutState])
+
+  // Poll payment status from Supabase
+  const checkPaymentStatus = useCallback(async () => {
+    if (!paymentId || isCheckingStatus) return
+
+    setIsCheckingStatus(true)
+    try {
+      const { data, error } = await api.getPayment(paymentId)
+      if (error) {
+        console.error('Error checking payment status:', error)
+        return
+      }
+
+      if (data) {
+        const newStatus = data.status?.toLowerCase() || 'pending'
+        console.log('Payment status:', newStatus)
+        setPaymentStatus(newStatus as any)
+
+        // If paid, stop polling and show success
+        if (newStatus === 'paid') {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current)
+            pollingIntervalRef.current = null
+          }
+          toast.success('Pembayaran berhasil!')
+        }
+
+        // If expired or failed
+        if (newStatus === 'expired' || newStatus === 'failed') {
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current)
+            pollingIntervalRef.current = null
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking payment status:', error)
+    } finally {
+      setIsCheckingStatus(false)
+    }
+  }, [paymentId, isCheckingStatus])
+
+  // Start polling when on confirmation step with paymentId
+  useEffect(() => {
+    if (step === 'confirmation' && paymentId && !pollingIntervalRef.current) {
+      // Check immediately
+      checkPaymentStatus()
+      // Then poll every 5 seconds
+      pollingIntervalRef.current = setInterval(checkPaymentStatus, 5000)
+    }
+
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current)
+        pollingIntervalRef.current = null
+      }
+    }
+  }, [step, paymentId, checkPaymentStatus])
 
   // Redirect if no product selected
   if (isLoading) {
@@ -179,7 +319,8 @@ function CheckoutContent() {
       }
 
       const invoice = result.data
-      console.log('Payment created:', invoice)
+      const paymentIdFromApi = result.paymentId // Get payment ID from response
+      console.log('Payment created:', invoice, 'Payment ID:', paymentIdFromApi)
 
       // 3. Set payment instructions based on payment type
       // Convert our PaymentMethod to Sakurupiah format
@@ -198,10 +339,16 @@ function CheckoutContent() {
       // 4. Update state
       setInvoiceNo(order.invoice_no)
       setOrderId(order.id)
+      if (paymentIdFromApi) {
+        setPaymentId(paymentIdFromApi)
+      }
       setInvoiceData({
         expired: invoice.expired,
         total: invoice.total,
       })
+
+      // 5. Reset payment status
+      setPaymentStatus('pending')
 
       // 6. Move to confirmation
       setIsProcessing(false)
@@ -383,140 +530,251 @@ function CheckoutContent() {
                 animate={{ opacity: 1, x: 0 }}
                 className="bg-surface-primary rounded-2xl border border-white/5 p-6"
               >
-                {/* Success Icon */}
-                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-blue-500/20 flex items-center justify-center">
-                  <Clock className="w-10 h-10 text-blue-400" />
-                </div>
+                {/* Dynamic Status Display */}
+                {paymentStatus === 'pending' && (
+                  <>
+                    {/* Pending Icon */}
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-blue-500/20 flex items-center justify-center">
+                      <Clock className="w-10 h-10 text-blue-400" />
+                    </div>
 
-                <h2 className="text-2xl font-bold text-white mb-2 text-center">
-                  Invoice Dibuat!
-                </h2>
-                <p className="text-white/70 mb-6 text-center">
-                  Selesaikan pembayaran sebelum {invoiceData?.expired || '24 jam'}.
-                </p>
+                    <h2 className="text-2xl font-bold text-white mb-2 text-center">
+                      Invoice Dibuat!
+                    </h2>
+                    <p className="text-white/70 mb-6 text-center">
+                      Selesaikan pembayaran sebelum {invoiceData?.expired || '24 jam'}.
+                    </p>
+                  </>
+                )}
 
-                {/* Payment Instructions - QRIS */}
-                <AnimatePresence>
-                  {paymentInstructions?.type === 'QRIS' && paymentInstructions.qrCode && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-white rounded-2xl p-6 mb-6"
-                    >
-                      <div className="flex items-center gap-2 mb-4">
-                        <QrCode className="w-5 h-5 text-gray-800" />
-                        <span className="font-semibold text-gray-800">Scan QR Code</span>
-                      </div>
-                      <div className="flex justify-center mb-4">
-                        <img
-                          src={paymentInstructions.qrCode}
-                          alt="QRIS Payment"
-                          className="w-64 h-64"
-                        />
-                      </div>
-                      <p className="text-sm text-gray-600 text-center">
-                        {paymentInstructions.instruction}
-                      </p>
-                    </motion.div>
-                  )}
+                {paymentStatus === 'paid' && (
+                  <>
+                    {/* Success Icon */}
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-500/20 flex items-center justify-center">
+                      <PartyPopper className="w-10 h-10 text-green-400" />
+                    </div>
 
-                  {/* Payment Instructions - Virtual Account */}
-                  {paymentInstructions?.type === 'VA' && paymentInstructions.paymentNo && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-dark-100 rounded-2xl p-6 mb-6"
-                    >
-                      <div className="flex items-center gap-2 mb-4">
-                        <CreditCard className="w-5 h-5 text-primary-400" />
-                        <span className="font-semibold text-white">Nomor Virtual Account</span>
+                    <h2 className="text-2xl font-bold text-white mb-2 text-center">
+                      Pembayaran Berhasil! 🎉
+                    </h2>
+                    <p className="text-white/70 mb-6 text-center">
+                      Terima kasih! Pesanan kamu sedang diproses.
+                    </p>
+                  </>
+                )}
+
+                {paymentStatus === 'expired' && (
+                  <>
+                    {/* Expired Icon */}
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                      <Clock className="w-10 h-10 text-yellow-400" />
+                    </div>
+
+                    <h2 className="text-2xl font-bold text-white mb-2 text-center">
+                      Pembayaran Kadaluarsa
+                    </h2>
+                    <p className="text-white/70 mb-6 text-center">
+                      Waktu pembayaran telah habis. Silakan buat pesanan baru.
+                    </p>
+                  </>
+                )}
+
+                {paymentStatus === 'failed' && (
+                  <>
+                    {/* Failed Icon */}
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-500/20 flex items-center justify-center">
+                      <XCircle className="w-10 h-10 text-red-400" />
+                    </div>
+
+                    <h2 className="text-2xl font-bold text-white mb-2 text-center">
+                      Pembayaran Gagal
+                    </h2>
+                    <p className="text-white/70 mb-6 text-center">
+                      Terjadi kesalahan saat proses pembayaran. Silakan coba lagi.
+                    </p>
+                  </>
+                )}
+
+                {/* Status Checker (only show when pending) */}
+                {paymentStatus === 'pending' && (
+                  <>
+                    {/* Payment Instructions - QRIS */}
+                    <AnimatePresence>
+                      {paymentInstructions?.type === 'QRIS' && paymentInstructions.qrCode && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-white rounded-2xl p-6 mb-6"
+                        >
+                          <div className="flex items-center gap-2 mb-4">
+                            <QrCode className="w-5 h-5 text-gray-800" />
+                            <span className="font-semibold text-gray-800">Scan QR Code</span>
+                          </div>
+                          <div className="flex justify-center mb-4">
+                            <img
+                              src={paymentInstructions.qrCode}
+                              alt="QRIS Payment"
+                              className="w-64 h-64"
+                            />
+                          </div>
+                          <p className="text-sm text-gray-600 text-center">
+                            {paymentInstructions.instruction}
+                          </p>
+                        </motion.div>
+                      )}
+
+                      {/* Payment Instructions - Virtual Account */}
+                      {paymentInstructions?.type === 'VA' && paymentInstructions.paymentNo && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-dark-100 rounded-2xl p-6 mb-6"
+                        >
+                          <div className="flex items-center gap-2 mb-4">
+                            <CreditCard className="w-5 h-5 text-primary-400" />
+                            <span className="font-semibold text-white">Nomor Virtual Account</span>
+                          </div>
+                          <div className="bg-white rounded-xl p-4 text-center">
+                            <p className="text-xs text-gray-500 mb-2">Nomor VA</p>
+                            <p className="text-2xl font-mono font-bold text-gray-800 tracking-wider">
+                              {paymentInstructions.paymentNo}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => copyToClipboard(paymentInstructions.paymentNo || '')}
+                            className="w-full mt-3 py-2 text-sm text-primary-400 hover:text-primary-300"
+                          >
+                            Salin Nomor VA
+                          </button>
+                          <p className="text-sm text-white/60 mt-4">
+                            {paymentInstructions.instruction}
+                          </p>
+                        </motion.div>
+                      )}
+
+                      {/* Payment Instructions - E-Wallet */}
+                      {paymentInstructions?.type === 'EWALLET' && paymentInstructions.checkoutUrl && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-dark-100 rounded-2xl p-6 mb-6"
+                        >
+                          <div className="flex items-center gap-2 mb-4">
+                            <CreditCard className="w-5 h-5 text-primary-400" />
+                            <span className="font-semibold text-white">Metode E-Wallet</span>
+                          </div>
+                          <a
+                            href={paymentInstructions.checkoutUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block w-full py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white text-center rounded-xl font-medium hover:from-primary-500 hover:to-primary-400 transition-all"
+                          >
+                            Bayar Sekarang
+                          </a>
+                          <p className="text-sm text-white/60 mt-4">
+                            {paymentInstructions.instruction}
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Invoice */}
+                    <div className="bg-dark-100 rounded-xl p-4 mb-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-white/60">Invoice</span>
+                        <button
+                          onClick={handleCopyInvoice}
+                          className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300"
+                        >
+                          {copied ? <Check size={12} /> : <Copy size={12} />}
+                          {copied ? 'Disalin!' : 'Salin'}
+                        </button>
                       </div>
-                      <div className="bg-white rounded-xl p-4 text-center">
-                        <p className="text-xs text-gray-500 mb-2">Nomor VA</p>
-                        <p className="text-2xl font-mono font-bold text-gray-800 tracking-wider">
-                          {paymentInstructions.paymentNo}
-                        </p>
+                      <p className="font-mono font-bold text-white text-lg">{invoiceNo}</p>
+                      <div className="mt-2 pt-2 border-t border-white/10 flex justify-between text-sm">
+                        <span className="text-white/50">Total Bayar</span>
+                        <span className="font-bold text-accent-cyan">
+                          {formatCurrency(invoiceData?.total || product?.price || 0)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Status Info - With Refresh Button */}
+                    <div className="flex items-center justify-center gap-6 mb-6 text-sm">
+                      <div className="flex items-center gap-2 text-yellow-400">
+                        <Clock size={16} />
+                        <span>Menunggu Pembayaran</span>
                       </div>
                       <button
-                        onClick={() => copyToClipboard(paymentInstructions.paymentNo || '')}
-                        className="w-full mt-3 py-2 text-sm text-primary-400 hover:text-primary-300"
+                        onClick={checkPaymentStatus}
+                        disabled={isCheckingStatus}
+                        className="flex items-center gap-1 text-primary-400 hover:text-primary-300 transition-colors disabled:opacity-50"
                       >
-                        Salin Nomor VA
+                        <RefreshCw size={14} className={isCheckingStatus ? 'animate-spin' : ''} />
+                        <span>Cek Status</span>
                       </button>
-                      <p className="text-sm text-white/60 mt-4">
-                        {paymentInstructions.instruction}
-                      </p>
-                    </motion.div>
-                  )}
+                    </div>
 
-                  {/* Payment Instructions - E-Wallet */}
-                  {paymentInstructions?.type === 'EWALLET' && paymentInstructions.checkoutUrl && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-dark-100 rounded-2xl p-6 mb-6"
+                    {/* Auto-refresh indicator */}
+                    <div className="text-xs text-white/40 text-center mb-4">
+                      <span className="inline-flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                        Auto-refresh aktif
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {/* Action Buttons - Different based on status */}
+                {paymentStatus === 'pending' && (
+                  <div className="flex gap-4">
+                    <Link href="/dashboard/riwayat" className="flex-1">
+                      <Button variant="secondary" className="w-full">
+                        Lihat Riwayat
+                      </Button>
+                    </Link>
+                    <Link href="/games" className="flex-1">
+                      <Button variant="secondary" className="w-full">
+                        Top Up Lagi
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+
+                {paymentStatus === 'paid' && (
+                  <div className="flex flex-col gap-3">
+                    <Link href="/dashboard/riwayat">
+                      <Button variant="primary" className="w-full">
+                        Lihat Pesanan
+                      </Button>
+                    </Link>
+                    <Link href="/games">
+                      <Button variant="secondary" className="w-full">
+                        Top Up Lagi
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+
+                {(paymentStatus === 'expired' || paymentStatus === 'failed') && (
+                  <div className="flex flex-col gap-3">
+                    <Button
+                      variant="primary"
+                      onClick={() => {
+                        clearCheckoutState()
+                        setStep('payment')
+                      }}
+                      className="w-full"
                     >
-                      <div className="flex items-center gap-2 mb-4">
-                        <CreditCard className="w-5 h-5 text-primary-400" />
-                        <span className="font-semibold text-white">Metode E-Wallet</span>
-                      </div>
-                      <a
-                        href={paymentInstructions.checkoutUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block w-full py-3 bg-gradient-to-r from-primary-600 to-primary-500 text-white text-center rounded-xl font-medium hover:from-primary-500 hover:to-primary-400 transition-all"
-                      >
-                        Bayar Sekarang
-                      </a>
-                      <p className="text-sm text-white/60 mt-4">
-                        {paymentInstructions.instruction}
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Invoice */}
-                <div className="bg-dark-100 rounded-xl p-4 mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm text-white/60">Invoice</span>
-                    <button
-                      onClick={handleCopyInvoice}
-                      className="flex items-center gap-1 text-xs text-primary-400 hover:text-primary-300"
-                    >
-                      {copied ? <Check size={12} /> : <Copy size={12} />}
-                      {copied ? 'Disalin!' : 'Salin'}
-                    </button>
-                  </div>
-                  <p className="font-mono font-bold text-white text-lg">{invoiceNo}</p>
-                  <div className="mt-2 pt-2 border-t border-white/10 flex justify-between text-sm">
-                    <span className="text-white/50">Total Bayar</span>
-                    <span className="font-bold text-accent-cyan">
-                      {formatCurrency(invoiceData?.total || product?.price || 0)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Status Info */}
-                <div className="flex items-center justify-center gap-6 mb-6 text-sm">
-                  <div className="flex items-center gap-2 text-yellow-400">
-                    <Clock size={16} />
-                    <span>Menunggu Pembayaran</span>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-4">
-                  <Link href="/dashboard/riwayat" className="flex-1">
-                    <Button variant="secondary" className="w-full">
-                      Lihat Riwayat
+                      Coba Lagi
                     </Button>
-                  </Link>
-                  <Link href="/games" className="flex-1">
-                    <Button variant="secondary" className="w-full">
-                      Top Up Lagi
-                    </Button>
-                  </Link>
-                </div>
+                    <Link href="/games">
+                      <Button variant="secondary" className="w-full">
+                        Pilih Game Lain
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </motion.div>
             )}
           </div>
