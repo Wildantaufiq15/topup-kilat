@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAuth } from '@/context/AuthContext'
 
 interface AdminGuardProps {
@@ -11,31 +11,38 @@ interface AdminGuardProps {
 
 export function AdminGuard({ children, allowedRoles = ['ADMIN', 'SUPER_ADMIN'] }: AdminGuardProps) {
   const router = useRouter()
-  const { user, profile, isLoading, isAuthenticated } = useAuth()
-  const [checking, setChecking] = useState(true)
+  const pathname = usePathname()
+  const { profile, isLoading, isProfileLoading, isAuthenticated } = useAuth()
+  const [checked, setChecked] = useState(false)
 
   useEffect(() => {
-    // Wait for auth to load
-    if (isLoading) return
+    // Wait for both auth AND profile to be loaded
+    if (isLoading || isProfileLoading) {
+      setChecked(false)
+      return
+    }
 
-    // Check if authenticated
+    // Both loaded, now check conditions
     if (!isAuthenticated) {
-      router.push('/login?redirect=/admin')
+      // Not logged in - redirect to login
+      router.push(`/login?redirect=${pathname}`)
       return
     }
 
     // Check role
     const userRole = profile?.role || 'USER'
     if (!allowedRoles.includes(userRole as any)) {
-      // Redirect non-admin users
+      // Not an admin - redirect to home
       router.push('/')
       return
     }
 
-    setChecking(false)
-  }, [isLoading, isAuthenticated, profile, router])
+    // User is authenticated and has the right role
+    setChecked(true)
+  }, [isLoading, isProfileLoading, isAuthenticated, profile, router, pathname])
 
-  if (checking || isLoading) {
+  // Show loading while checking auth and profile
+  if (isLoading || isProfileLoading || !checked) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-dark-100">
         <div className="text-center">

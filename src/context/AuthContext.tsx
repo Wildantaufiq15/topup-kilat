@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
@@ -13,6 +13,7 @@ interface AuthContextType {
   session: Session | null
   isLoading: boolean
   isAuthenticated: boolean
+  isProfileLoading: boolean
   login: (email: string, password: string) => Promise<void>
   register: (data: { email: string; name: string; password: string; phone?: string }) => Promise<void>
   logout: () => Promise<void>
@@ -26,9 +27,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isProfileLoading, setIsProfileLoading] = useState(false)
+  const profileFetchedRef = useRef(false)
 
   // Fetch user profile from users table
   const fetchProfile = useCallback(async (userId: string) => {
+    setIsProfileLoading(true)
     try {
       const { data, error } = await supabase
         .from('users')
@@ -43,21 +47,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setProfile(data)
+      profileFetchedRef.current = true
     } catch (error) {
       console.error('Error fetching profile:', error)
       setProfile(null)
+    } finally {
+      setIsProfileLoading(false)
     }
   }, [])
 
   // Initialize auth state
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
+
       if (session?.user) {
-        fetchProfile(session.user.id)
+        await fetchProfile(session.user.id)
       }
+
       setIsLoading(false)
     })
 
@@ -71,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await fetchProfile(session.user.id)
         } else {
           setProfile(null)
+          profileFetchedRef.current = false
         }
 
         setIsLoading(false)
@@ -135,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(error.message)
     }
     setProfile(null)
+    profileFetchedRef.current = false
   }
 
   const refreshProfile = async () => {
@@ -148,6 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     profile,
     session,
     isLoading,
+    isProfileLoading,
     isAuthenticated: !!user,
     login,
     register,
