@@ -415,17 +415,17 @@ Sandbox (Aktif):
 1. ~~User Auth~~ - Login/Register pages dengan Supabase Auth ✅
 2. ~~RLS Fix - Registration working~~ ✅
 3. ~~Payment Gateway - Sakurupiah sandbox~~ ✅ COMPLETE!
-4. **Test Payment Flow** - Scan QR and verify payment
-5. **Webhook Handler** - Update payment status automatically
+4. ~~Test Payment Flow - Scan QR and verify payment~~ ✅ FIXED! (pake polling langsung ke Sakurupiah API)
+5. ~~Webhook Handler~~ ✅ FIXED! (callback tidak reliably,换成 polling)
 6. **Supplier API** - Setup Digiflazz untuk deliver diamond ⏳
 7. **Order Status Updates** - PAID → PROCESSING → SUCCESS
 
 ### Action Items:
-- [ ] Test scan QR - verify payment status updates
-- [ ] Setup webhook handler for Sakurupiah callback
+- [x] Test scan QR - verify payment status updates (FIXED: polling langsung ke Sakurupiah)
+- [x] Setup webhook handler for Sakurupiah callback (FIXED: tidak rely on callback)
 - [ ] Tanya ke admin Digiflazz: solusi IP whitelist untuk Vercel
 
 ---
 
-*Payment Gateway integration completed! Website can now accept real payments via QRIS.*
+*Payment polling fix completed! Status check now uses direct API polling instead of relying on unreliable callbacks.*
 *Dokumen ini diupdate pada: 7 Juli 2026*
