@@ -523,7 +523,7 @@ function VoucherModal({
                 code: form.code,
                 name: form.code,
                 type: form.type,
-                discount_type: form.discount_type,
+                discount_type: form.discount_type as 'PERCENTAGE' | 'FIXED',
                 discount_value: parseInt(form.discount_value),
                 max_discount: form.max_discount ? parseInt(form.max_discount) : null,
                 min_transaction: form.min_transaction ? parseInt(form.min_transaction) : 0,
