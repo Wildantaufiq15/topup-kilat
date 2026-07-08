@@ -33,7 +33,9 @@
       "WebFetch(domain:sakurupiah.com)",
       "WebFetch(domain:docs.sakurupiah.com)",
       "WebFetch(domain:sakurupiah.id)",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "WebFetch(domain:www.rumahweb.com)",
+      "WebFetch(domain:www.hetzner.com)"
     ]
   }
 }
