@@ -40,6 +40,11 @@ const adminNavItems = [
     href: '/admin/vouchers',
     icon: Ticket,
   },
+  {
+    title: 'Users',
+    href: '/admin/users',
+    icon: Users,
+  },
 ]
 
 export default function AdminLayout({
