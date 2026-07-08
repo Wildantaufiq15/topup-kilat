@@ -351,11 +351,14 @@ export default function AdminOverview() {
           <p className="text-white font-medium">Kelola Voucher</p>
           <p className="text-white/50 text-sm">Buat promo & diskon</p>
         </a>
-        <div className="p-4 bg-surface-primary rounded-xl border border-white/5 hover:border-white/10 transition-all group">
+        <a
+          href="/admin/users"
+          className="p-4 bg-surface-primary rounded-xl border border-white/5 hover:border-white/10 transition-all group"
+        >
           <Users className="w-8 h-8 text-blue-400 mb-2 group-hover:scale-110 transition-transform" />
           <p className="text-white font-medium">Kelola Users</p>
           <p className="text-white/50 text-sm">Lihat data pengguna</p>
-        </div>
+        </a>
       </div>
     </div>
   )
