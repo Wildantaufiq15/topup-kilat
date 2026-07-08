@@ -186,21 +186,19 @@ function CheckoutContent() {
     }
   }, [step, saveCheckoutState])
 
-  // Poll payment status from Supabase
+  // Poll payment status from Sakurupiah via API route
   const checkPaymentStatus = useCallback(async () => {
     if (!paymentId || isCheckingStatus) return
 
     setIsCheckingStatus(true)
     try {
-      const { data, error } = await api.getPayment(paymentId)
-      if (error) {
-        console.error('Error checking payment status:', error)
-        return
-      }
+      // Call our API route which checks Sakurupiah directly
+      const response = await fetch(`/api/payments/status?paymentId=${paymentId}`)
+      const result = await response.json()
 
-      if (data) {
-        const newStatus = data.status?.toLowerCase() || 'pending'
-        console.log('Payment status:', newStatus)
+      if (result.success) {
+        const newStatus = result.status?.toLowerCase() || 'pending'
+        console.log('Payment status from Sakurupiah:', newStatus, 'updated:', result.updated)
         setPaymentStatus(newStatus as any)
 
         // If paid, stop polling and show success
@@ -219,6 +217,8 @@ function CheckoutContent() {
             pollingIntervalRef.current = null
           }
         }
+      } else {
+        console.error('Error checking payment status:', result.message)
       }
     } catch (error) {
       console.error('Error checking payment status:', error)

@@ -27,22 +27,24 @@ interface SakurupiahCallback {
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = `cb-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+
   try {
     // Get raw body for signature verification
     const rawBody = await request.text()
     const signature = request.headers.get('x-callback-signature') || ''
     const callbackEvent = request.headers.get('x-callback-event') || ''
 
-    console.log('=== Sakurupiah Callback ===')
-    console.log('Event:', callbackEvent)
-    console.log('Body:', rawBody)
-    console.log('Signature:', signature)
+    console.log('========== SAKURUPIAH CALLBACK ==========')
+    console.log(`[${requestId}] Event:`, callbackEvent)
+    console.log(`[${requestId}] Raw Body:`, rawBody)
+    console.log(`[${requestId}] Signature:`, signature ? 'present' : 'missing')
 
     // Parse callback data
     const data: SakurupiahCallback = JSON.parse(rawBody)
     const { trx_id, merchant_ref, status } = data
 
-    console.log('Parsed data:', { trx_id, merchant_ref, status })
+    console.log(`[${requestId}] Parsed data:`, { trx_id, merchant_ref, status })
 
     // Verify signature (optional in production, but recommended)
     if (signature && process.env.SAKURUPIAH_API_KEY) {
@@ -91,7 +93,7 @@ export async function POST(request: NextRequest) {
         orderStatus = (status as string).toUpperCase()
     }
 
-    console.log('Mapped status:', { paymentStatus, orderStatus })
+    console.log(`[${requestId}] Mapped status:`, { paymentStatus, orderStatus })
 
     // Find payment by trx_id (provider_ref) or merchant_ref
     let paymentData: any = null
@@ -99,7 +101,7 @@ export async function POST(request: NextRequest) {
 
     // Try to find by trx_id first (provider_ref in our DB)
     if (trx_id) {
-      console.log('Searching by trx_id (provider_ref):', trx_id)
+      console.log(`[${requestId}] Searching by trx_id (provider_ref):`, trx_id)
       const { data: paymentByTrx } = await supabaseAdmin
         .from('payments')
         .select('id, order_id')
@@ -108,13 +110,13 @@ export async function POST(request: NextRequest) {
 
       if (paymentByTrx) {
         paymentData = paymentByTrx
-        console.log('Found payment by trx_id:', paymentByTrx)
+        console.log(`[${requestId}] Found payment by trx_id:`, paymentByTrx)
       }
     }
 
     // Try by merchant_ref if not found
     if (!paymentData && merchant_ref) {
-      console.log('Searching by merchant_ref:', merchant_ref)
+      console.log(`[${requestId}] Searching by merchant_ref:`, merchant_ref)
       const { data: paymentByRef } = await supabaseAdmin
         .from('payments')
         .select('id, order_id')
@@ -123,13 +125,13 @@ export async function POST(request: NextRequest) {
 
       if (paymentByRef) {
         paymentData = paymentByRef
-        console.log('Found payment by merchant_ref:', paymentByRef)
+        console.log(`[${requestId}] Found payment by merchant_ref:`, paymentByRef)
       }
     }
 
     // If still not found, try to find by partial match in order invoice
     if (!paymentData && merchant_ref) {
-      console.log('Trying to find by order invoice_no...')
+      console.log(`[${requestId}] Trying to find by order invoice_no...`)
       // merchant_ref format: TK-{orderId_prefix}-{timestamp}
       // Extract potential order reference
       const orderPrefix = merchant_ref.replace(/^TK-/, '').split('-')[0]
@@ -152,17 +154,15 @@ export async function POST(request: NextRequest) {
 
           if (paymentForOrder) {
             paymentData = paymentForOrder
-            console.log('Found payment by order prefix:', paymentForOrder)
+            console.log(`[${requestId}] Found payment by order prefix:`, paymentForOrder)
           }
         }
       }
     }
 
     if (!paymentData) {
-      console.error('Payment not found for:', { trx_id, merchant_ref })
-
-      // Log failed callback for debugging
-      console.log('Failed callback data:', JSON.stringify(data))
+      console.error(`[${requestId}] Payment not found for:`, { trx_id, merchant_ref })
+      console.log(`[${requestId}] Failed callback data:`, JSON.stringify(data))
 
       return NextResponse.json(
         { success: false, message: 'Payment not found' },
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
     }
 
     paymentId = paymentData.id
-    console.log('Updating payment:', paymentId, 'to status:', paymentStatus)
+    console.log(`[${requestId}] Updating payment:`, paymentId, 'to status:', paymentStatus)
 
     // Update payment status
     const { error: paymentError } = await supabaseAdmin
@@ -191,11 +191,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('Payment updated successfully')
+    console.log(`[${requestId}] Payment updated successfully`)
 
     // Update order status
     if (paymentData.order_id) {
-      console.log('Updating order:', paymentData.order_id, 'to status:', orderStatus)
+      console.log(`[${requestId}] Updating order:`, paymentData.order_id, 'to status:', orderStatus)
 
       const { error: orderError } = await supabaseAdmin
         .from('orders')
@@ -207,20 +207,21 @@ export async function POST(request: NextRequest) {
         .eq('id', paymentData.order_id)
 
       if (orderError) {
-        console.error('Error updating order:', orderError)
+        console.error(`[${requestId}] Error updating order:`, orderError)
         // Continue anyway - payment is updated
       } else {
-        console.log('Order updated successfully')
+        console.log(`[${requestId}] Order updated successfully`)
       }
 
       // If payment successful, trigger supplier delivery (future)
       if (status === 'berhasil') {
-        console.log('🎉 Payment successful, order ready for processing!')
+        console.log(`[${requestId}] 🎉 Payment successful, order ready for processing!`)
         // TODO: Trigger supplier API (Digiflazz) to deliver the product
       }
     }
 
-    console.log('=== Callback processing complete ===')
+    console.log(`[${requestId}] === Callback processing complete ===`)
+    console.log('==========================================')
 
     return NextResponse.json({
       success: true,
@@ -229,7 +230,9 @@ export async function POST(request: NextRequest) {
       newStatus: paymentStatus,
     })
   } catch (error: any) {
-    console.error('Callback error:', error)
+    console.error(`[${requestId}] Callback error:`, error.message || error)
+    console.error(`[${requestId}] Full error:`, error)
+    console.log('==========================================')
     return NextResponse.json(
       { success: false, message: error.message || 'Internal server error' },
       { status: 500 }
