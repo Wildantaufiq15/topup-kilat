@@ -1,0 +1,17 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" rx="24" fill="#0a329f"/>
+  <rect width="200" height="200" rx="24" fill="url(#wr-gradient)"/>
+  <defs>
+    <linearGradient id="wr-gradient" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0a329f"/>
+      <stop offset="50%" stop-color="#1e5ae8"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="95" r="48" fill="#ffffff" fill-opacity="0.95"/>
+  <path d="M75 70 L140 95 L75 120 Z" fill="#0a329f"/>
+  <circle cx="100" cy="95" r="22" fill="#ffffff"/>
+  <circle cx="100" cy="95" r="15" fill="#0a329f"/>
+  <path d="M90 88 L100 95 L90 102" fill="#ffffff" fill-opacity="0.5"/>
+  <text x="100" y="180" text-anchor="middle" fill="#ffffff" font-family="Arial Black, sans-serif" font-size="10" font-weight="900">WILD RIFT</text>
+</svg>

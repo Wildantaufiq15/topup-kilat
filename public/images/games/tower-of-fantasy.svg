@@ -1,0 +1,17 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" rx="24" fill="#1a1a2e"/>
+  <rect width="200" height="200" rx="24" fill="url(#tof-gradient)"/>
+  <defs>
+    <linearGradient id="tof-gradient" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="50%" stop-color="#0891b2"/>
+      <stop offset="100%" stop-color="#1e40af"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="95" r="48" fill="#ffffff" fill-opacity="0.95"/>
+  <polygon points="100,50 130,75 130,115 100,140 70,115 70,75" fill="#06b6d4"/>
+  <polygon points="100,60 120,78 120,112 100,130 80,112 80,78" fill="#ffffff"/>
+  <circle cx="100" cy="95" r="15" fill="#0891b2"/>
+  <polygon points="100,85 108,95 100,105 92,95" fill="#ffffff"/>
+  <text x="100" y="180" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="9" font-weight="bold" letter-spacing="0.3">TOWER OF FANTASY</text>
+</svg>

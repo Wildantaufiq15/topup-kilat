@@ -1,8 +1,8 @@
 # 📊 Progress Report - Topup Kilat
 
 **Tanggal:** 9 Juli 2026
-**Status:** ⏸️ Fase 9 - Menunggu VPS DomaiNesia
-**Versi:** 4.1.0
+**Status:** ✅ Fase 10 - Logo Game & Image Uploader
+**Versi:** 4.2.0
 
 ---
 
@@ -326,6 +326,55 @@ User → Vercel (Frontend) → VPS Proxy (Static IP) → Digiflazz API
 
 ## 📝 Catatan Sesi
 
+### 9 Juli 2026 - Logo Game SVG & Image Uploader untuk Admin
+
+#### Fitur Baru:
+
+**1. Logo Game SVG (12 Game)**
+- Setiap game sekarang memiliki logo SVG kustom
+- Logo disimpan di `/public/images/games/*.svg`
+- Games yang didukung:
+  - Mobile Legends, Free Fire, Free Fire MAX
+  - Genshin Impact, PUBG Mobile, Valorant
+  - Honor of Kings, Call of Duty Mobile, Wild Rift
+  - Higgs Domino, Tower of Fantasy, Apex Legends
+
+**2. Image Uploader dengan Drag & Drop (`/components/ui/ImageUploader.tsx`)**
+- Fitur drag & drop untuk upload gambar
+- Preview gambar sebelum upload
+- Toggle antara upload file atau input URL
+- Validasi: format (JPG, PNG, WEBP), ukuran maks 2MB
+- Upload ke Supabase Storage (fallback ke base64)
+- Support aspect ratio (square, video, auto)
+
+**3. Update Admin Products Page**
+- GameModal sekarang menggunakan ImageUploader
+- Toggle "Upload Gambar" / "URL Gambar"
+- Auto-generate slug dari nama game
+- Preview logo game
+
+#### Files Created:
+1. `public/images/games/mobile-legends.svg` - Logo Mobile Legends
+2. `public/images/games/free-fire.svg` - Logo Free Fire
+3. `public/images/games/genshin-impact.svg` - Logo Genshin Impact
+4. `public/images/games/pubg-mobile.svg` - Logo PUBG Mobile
+5. `public/images/games/valorant.svg` - Logo Valorant
+6. `public/images/games/honor-of-kings.svg` - Logo Honor of Kings
+7. `public/images/games/cod-mobile.svg` - Logo COD Mobile
+8. `public/images/games/wild-rift.svg` - Logo Wild Rift
+9. `public/images/games/higgs-domino.svg` - Logo Higgs Domino
+10. `public/images/games/tower-of-fantasy.svg` - Logo Tower of Fantasy
+11. `public/images/games/apex-legends.svg` - Logo Apex Legends
+12. `public/images/games/free-fire-max.svg` - Logo Free Fire MAX
+13. `src/components/ui/ImageUploader.tsx` - Image uploader component (NEW)
+14. `scripts/update-game-logos.sql` - SQL script untuk update logo di Supabase
+
+#### Files Updated:
+1. `src/app/data/mockData.ts` - Update logo URL ke `/images/games/*.svg`
+2. `src/app/admin/products/page.tsx` - Add ImageUploader ke GameModal
+
+---
+
 ### 9 Juli 2026 - Fitur Lupa Password & Search Game
 
 #### Fitur Baru:
@@ -458,15 +507,18 @@ Changed from callback-based to polling-based status check.
 
 | Metric | Value |
 |--------|-------|
-| Total Files | ~140 files |
+| Total Files | ~155 files |
 | Frontend Pages | 16 pages |
 | Database Tables | 13 tables |
+| Game Logos | 12 SVG files |
+| UI Components | 25+ components |
 | Orders Created | 5+ (testing) |
 | Live Deployments | 1 (Vercel) |
-| Git Commits | 25+ commits |
+| Git Commits | 27+ commits |
 | Auth System | ✅ Implemented |
 | Payment Gateway | ✅ Integrated |
 | Admin Panel | ✅ Complete |
+| Image Uploader | ✅ Added |
 
 ---
 

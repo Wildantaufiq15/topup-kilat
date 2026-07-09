@@ -1,0 +1,18 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" rx="24" fill="#1a1a2e"/>
+  <rect width="200" height="200" rx="24" fill="url(#cod-gradient)"/>
+  <defs>
+    <linearGradient id="cod-gradient" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2d3748"/>
+      <stop offset="50%" stop-color="#4a5568"/>
+      <stop offset="100%" stop-color="#1a1a2e"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="50" fill="#ffffff" fill-opacity="0.95"/>
+  <rect x="55" y="60" width="90" height="60" rx="6" fill="#1a1a2e"/>
+  <rect x="60" y="65" width="80" height="50" rx="4" fill="#2d3748"/>
+  <circle cx="100" cy="90" r="18" fill="#4a5568"/>
+  <circle cx="100" cy="90" r="12" fill="#1a1a2e"/>
+  <rect x="65" y="135" width="70" height="8" rx="4" fill="#2d3748"/>
+  <text x="100" y="175" text-anchor="middle" fill="#ffffff" font-family="Arial Black, sans-serif" font-size="9" font-weight="900" letter-spacing="0.5">CALL OF DUTY</text>
+</svg>

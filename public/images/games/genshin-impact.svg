@@ -1,0 +1,15 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" rx="24" fill="#1a1a2e"/>
+  <rect width="200" height="200" rx="24" fill="url(#gi-gradient)"/>
+  <defs>
+    <linearGradient id="gi-gradient" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5fa8d3"/>
+      <stop offset="50%" stop-color="#62b6cb"/>
+      <stop offset="100%" stop-color="#1e3a5f"/>
+    </linearGradient>
+  </defs>
+  <polygon points="100,35 125,85 175,90 140,125 150,175 100,150 50,175 60,125 25,90 75,85" fill="#ffffff" fill-opacity="0.95"/>
+  <polygon points="100,55 115,85 145,88 125,110 130,140 100,125 70,140 75,110 55,88 85,85" fill="#5fa8d3"/>
+  <circle cx="100" cy="95" r="15" fill="#ffffff"/>
+  <text x="100" y="185" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="10" font-weight="bold" letter-spacing="0.5">GENSHIN</text>
+</svg>

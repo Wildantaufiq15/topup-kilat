@@ -1,0 +1,15 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" rx="24" fill="#ff6b00"/>
+  <rect width="200" height="200" rx="24" fill="url(#ff-gradient)"/>
+  <defs>
+    <linearGradient id="ff-gradient" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ff6b00"/>
+      <stop offset="50%" stop-color="#ff8c00"/>
+      <stop offset="100%" stop-color="#ff4500"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="55" fill="#ffffff" fill-opacity="0.95"/>
+  <text x="100" y="95" text-anchor="middle" fill="#1a1a2e" font-family="Arial Black, sans-serif" font-size="22" font-weight="900">FREE</text>
+  <text x="100" y="118" text-anchor="middle" fill="#ff6b00" font-family="Arial Black, sans-serif" font-size="18" font-weight="900">FIRE</text>
+  <rect x="60" y="165" width="80" height="6" rx="3" fill="#1a1a2e" fill-opacity="0.3"/>
+</svg>

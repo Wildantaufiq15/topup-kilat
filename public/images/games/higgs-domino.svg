@@ -1,0 +1,19 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" rx="24" fill="#1a1a2e"/>
+  <rect width="200" height="200" rx="24" fill="url(#domino-gradient)"/>
+  <defs>
+    <linearGradient id="domino-gradient" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#22c55e"/>
+      <stop offset="50%" stop-color="#16a34a"/>
+      <stop offset="100%" stop-color="#15803d"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="95" r="50" fill="#ffffff" fill-opacity="0.95"/>
+  <rect x="60" y="55" width="35" height="70" rx="6" fill="#22c55e" transform="rotate(-15 77 90)"/>
+  <circle cx="72" cy="72" r="5" fill="#ffffff"/>
+  <circle cx="83" cy="108" r="5" fill="#ffffff"/>
+  <rect x="95" y="55" width="35" height="70" rx="6" fill="#16a34a" transform="rotate(15 112 90)"/>
+  <circle cx="108" cy="68" r="5" fill="#ffffff"/>
+  <circle cx="127" cy="112" r="5" fill="#ffffff"/>
+  <text x="100" y="175" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="10" font-weight="bold" letter-spacing="0.5">HIGGS DOMINO</text>
+</svg>

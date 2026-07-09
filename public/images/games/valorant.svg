@@ -1,0 +1,15 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" rx="24" fill="#1a1a2e"/>
+  <rect width="200" height="200" rx="24" fill="url(#val-gradient)"/>
+  <defs>
+    <linearGradient id="val-gradient" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ff4655"/>
+      <stop offset="50%" stop-color="#ff6b6b"/>
+      <stop offset="100%" stop-color="#1a1a2e"/>
+    </linearGradient>
+  </defs>
+  <polygon points="100,30 130,65 175,75 145,110 150,155 100,135 50,155 55,110 25,75 70,65" fill="#ff4655"/>
+  <polygon points="100,50 120,70 150,78 130,100 133,130 100,115 67,130 70,100 50,78 80,70" fill="#ffffff"/>
+  <circle cx="100" cy="85" r="12" fill="#1a1a2e"/>
+  <text x="100" y="175" text-anchor="middle" fill="#ffffff" font-family="Arial Black, sans-serif" font-size="11" font-weight="900" letter-spacing="1">VALORANT</text>
+</svg>

@@ -17,6 +17,7 @@ import { formatCurrency } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
+import { ImageUploader } from '@/components/ui/ImageUploader'
 
 interface Game {
   id: string
@@ -443,25 +444,79 @@ function GameModal({
     category: game?.category || 'MOBILE',
     sort_order: game?.sort_order || 1,
   })
+  const [logoMode, setLogoMode] = useState<'upload' | 'url'>(form.logo?.startsWith('http') ? 'url' : 'upload')
 
   const categories = ['MOBILE', 'PC', 'CONSOLE', 'VOUCHER', 'OTHER']
 
+  // Auto-generate slug from name
+  const handleNameChange = (name: string) => {
+    const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    setForm({ ...form, name, slug: game?.slug || slug })
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-surface-primary rounded-xl border border-white/5 w-full max-w-md">
-        <div className="p-4 border-b border-white/5 flex items-center justify-between">
+      <div className="bg-surface-primary rounded-xl border border-white/5 w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="p-4 border-b border-white/5 flex items-center justify-between sticky top-0 bg-surface-primary z-10">
           <h2 className="text-lg font-bold text-white">
             {game ? 'Edit Game' : 'Tambah Game Baru'}
           </h2>
           <button onClick={onClose} className="text-white/50 hover:text-white">✕</button>
         </div>
         <div className="p-4 space-y-4">
+          {/* Logo Upload */}
+          <div>
+            <label className="block text-sm text-white/70 mb-2">Logo Game</label>
+            <div className="flex gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setLogoMode('upload')}
+                className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
+                  logoMode === 'upload'
+                    ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
+                    : 'bg-dark-100 text-white/50 border border-white/5'
+                }`}
+              >
+                Upload Gambar
+              </button>
+              <button
+                type="button"
+                onClick={() => setLogoMode('url')}
+                className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
+                  logoMode === 'url'
+                    ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
+                    : 'bg-dark-100 text-white/50 border border-white/5'
+                }`}
+              >
+                URL Gambar
+              </button>
+            </div>
+
+            {logoMode === 'upload' ? (
+              <ImageUploader
+                value={form.logo}
+                onChange={(url) => setForm({ ...form, logo: url })}
+                aspectRatio="square"
+                maxSize={2}
+                folder="game-logos"
+              />
+            ) : (
+              <input
+                type="url"
+                value={form.logo}
+                onChange={(e) => setForm({ ...form, logo: e.target.value })}
+                className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-primary-500 placeholder-white/30"
+                placeholder="https://example.com/logo.png"
+              />
+            )}
+          </div>
+
           <div>
             <label className="block text-sm text-white/70 mb-1">Nama Game</label>
             <input
               type="text"
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => handleNameChange(e.target.value)}
               className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-500"
               placeholder="Mobile Legends"
             />
@@ -477,16 +532,6 @@ function GameModal({
             />
           </div>
           <div>
-            <label className="block text-sm text-white/70 mb-1">Logo URL</label>
-            <input
-              type="text"
-              value={form.logo}
-              onChange={(e) => setForm({ ...form, logo: e.target.value })}
-              className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-primary-500"
-              placeholder="https://example.com/logo.png"
-            />
-          </div>
-          <div>
             <label className="block text-sm text-white/70 mb-1">Kategori</label>
             <select
               value={form.category}
@@ -499,7 +544,7 @@ function GameModal({
             </select>
           </div>
         </div>
-        <div className="p-4 border-t border-white/5 flex items-center justify-between">
+        <div className="p-4 border-t border-white/5 flex items-center justify-between sticky bottom-0 bg-surface-primary">
           {onDelete && (
             <button
               onClick={onDelete}

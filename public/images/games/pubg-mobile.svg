@@ -1,0 +1,18 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" rx="24" fill="#1e3a1e"/>
+  <rect width="200" height="200" rx="24" fill="url(#pubg-gradient)"/>
+  <defs>
+    <linearGradient id="pubg-gradient" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4a7c59"/>
+      <stop offset="50%" stop-color="#2d5016"/>
+      <stop offset="100%" stop-color="#1e3a1e"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="50" fill="#ffffff" fill-opacity="0.95"/>
+  <rect x="75" y="70" width="50" height="40" rx="4" fill="#4a7c59"/>
+  <rect x="80" y="75" width="40" height="30" rx="2" fill="#2d5016"/>
+  <circle cx="65" cy="100" r="20" fill="#ffffff"/>
+  <circle cx="65" cy="100" r="15" fill="#4a7c59"/>
+  <rect x="60" y="120" width="80" height="6" rx="3" fill="#4a7c59"/>
+  <text x="100" y="180" text-anchor="middle" fill="#ffffff" font-family="Arial Black, sans-serif" font-size="12" font-weight="900">PUBG MOBILE</text>
+</svg>

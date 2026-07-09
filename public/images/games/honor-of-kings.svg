@@ -1,0 +1,16 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" rx="24" fill="#1a1a2e"/>
+  <rect width="200" height="200" rx="24" fill="url(#hok-gradient)"/>
+  <defs>
+    <linearGradient id="hok-gradient" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#d4380d"/>
+      <stop offset="50%" stop-color="#ff4d4f"/>
+      <stop offset="100%" stop-color="#1a1a2e"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="95" r="50" fill="#ffffff" fill-opacity="0.95"/>
+  <path d="M100 55 L140 95 L100 135 L60 95 Z" fill="#d4380d"/>
+  <path d="M100 65 L130 95 L100 125 L70 95 Z" fill="#ffffff"/>
+  <circle cx="100" cy="95" r="20" fill="#d4380d"/>
+  <text x="100" y="175" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="9" font-weight="bold" letter-spacing="0.3">HONOR OF KINGS</text>
+</svg>
