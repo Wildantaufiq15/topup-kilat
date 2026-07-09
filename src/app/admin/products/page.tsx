@@ -34,7 +34,7 @@ interface Game {
   category: string
   description: string | null
   featured: boolean
-  requires_serverId: boolean
+  requires_server_id: boolean
   sort_order: number
   is_active: boolean
   created_at: string
@@ -611,7 +611,7 @@ function GameModal({
     category: game?.category || 'MOBILE',
     description: game?.description || '',
     featured: game?.featured || false,
-    requires_serverId: game?.requires_serverId || true,
+    requires_server_id: game?.requires_server_id || true,
     is_active: game?.is_active !== undefined ? game.is_active : true,
     sort_order: game?.sort_order || 1,
   })
@@ -632,7 +632,7 @@ function GameModal({
   }
 
   // Toggle boolean fields
-  const toggleField = (field: 'featured' | 'requires_serverId' | 'is_active') => {
+  const toggleField = (field: 'featured' | 'requires_server_id' | 'is_active') => {
     setForm({ ...form, [field]: !form[field] })
   }
 
@@ -858,18 +858,18 @@ function GameModal({
 
                 {/* Requires Server ID Toggle */}
                 <div
-                  onClick={() => toggleField('requires_serverId')}
+                  onClick={() => toggleField('requires_server_id')}
                   className="flex items-center justify-between px-3 py-2.5 bg-dark-100 rounded-lg cursor-pointer hover:bg-white/5 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <Globe size={16} className={form.requires_serverId ? 'text-accent-cyan' : 'text-white/40'} />
+                    <Globe size={16} className={form.requires_server_id ? 'text-accent-cyan' : 'text-white/40'} />
                     <div>
                       <span className="text-sm text-white">Butuh Server ID</span>
                       <p className="text-xs text-white/40">Pengguna harus input Server ID saat order</p>
                     </div>
                   </div>
-                  <div className={`w-10 h-6 rounded-full transition-colors ${form.requires_serverId ? 'bg-accent-cyan' : 'bg-white/10'}`}>
-                    <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${form.requires_serverId ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`} />
+                  <div className={`w-10 h-6 rounded-full transition-colors ${form.requires_server_id ? 'bg-accent-cyan' : 'bg-white/10'}`}>
+                    <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${form.requires_server_id ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`} />
                   </div>
                 </div>
 
@@ -919,7 +919,7 @@ function GameModal({
                 category: form.category,
                 description: form.description || null,
                 featured: form.featured,
-                requires_serverId: form.requires_serverId,
+                requires_server_id: form.requires_server_id,
                 is_active: form.is_active,
                 sort_order: form.sort_order,
               })}
