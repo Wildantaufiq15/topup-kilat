@@ -54,7 +54,7 @@ export function GameCard({ game, className, featured = false, compact = false }:
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-dark-100">
           <Image
-            src={game.logo || '/placeholder/game.png'}
+            src={game.logo || '/placeholder/game.svg'}
             alt={game.name}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"

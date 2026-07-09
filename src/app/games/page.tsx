@@ -1,39 +1,71 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Suspense } from 'react'
 import { GameGrid } from '@/components/game/GameGrid'
 import { GameCardSkeleton } from '@/components/ui/Skeleton'
-import { mockGames } from '../data/mockData'
 import { GameCategoryFilter } from '@/components/game/GameGrid'
 import { GamesHeader } from './components/GamesHeader'
+import { api } from '@/lib/api'
 
 export default function GamesPage() {
-  const [games] = useState(mockGames)
+  const [games, setGames] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [searchQuery, setSearchQuery] = useState('')
+
+  useEffect(() => {
+    async function fetchGames() {
+      try {
+        const data = await api.getGames()
+        setGames(data)
+      } catch (error) {
+        console.error('Error fetching games:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    fetchGames()
+  }, [])
 
   // Filter games by category and search
   const filteredGames = useMemo(() => {
     let result = games
 
-    // Filter by category
+    // Filter by category (case-insensitive)
     if (selectedCategory !== 'all') {
-      result = result.filter(g => g.category === selectedCategory)
+      result = result.filter(g => g.category?.toLowerCase() === selectedCategory.toLowerCase())
     }
 
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
       result = result.filter(g =>
-        g.name.toLowerCase().includes(query) ||
-        g.category.toLowerCase().includes(query) ||
+        g.name?.toLowerCase().includes(query) ||
+        g.category?.toLowerCase().includes(query) ||
         g.description?.toLowerCase().includes(query)
       )
     }
 
     return result
   }, [games, selectedCategory, searchQuery])
+
+  // Map database games to component format
+  const mappedGames = useMemo(() => {
+    return filteredGames.map(g => ({
+      id: g.id,
+      name: g.name,
+      slug: g.slug,
+      logo: g.logo || '/placeholder/game.svg',
+      banner: g.banner || null,
+      category: g.category?.toLowerCase() || 'mobile',
+      description: g.description || null,
+      requires_server_id: g.requires_server_id ?? true,
+      is_active: g.is_active ?? true,
+      featured: g.featured ?? false,
+      totalTransactions: g.total_transactions || 0,
+    }))
+  }, [filteredGames])
 
   return (
     <div className="min-h-screen">
@@ -55,7 +87,9 @@ export default function GamesPage() {
         {/* Results count */}
         <div className="mb-4">
           <p className="text-sm text-white/50">
-            {searchQuery ? (
+            {isLoading ? (
+              'Memuat game...'
+            ) : searchQuery ? (
               <>Menampilkan <span className="text-white font-medium">{filteredGames.length}</span> hasil untuk "{searchQuery}"</>
             ) : (
               <>Menampilkan <span className="text-white font-medium">{filteredGames.length}</span> game</>
@@ -73,7 +107,7 @@ export default function GamesPage() {
             </div>
           }
         >
-          <GameGrid games={filteredGames} columns={6} />
+          <GameGrid games={mappedGames} columns={6} isLoading={isLoading} />
         </Suspense>
       </div>
     </div>
