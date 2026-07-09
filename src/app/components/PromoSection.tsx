@@ -30,6 +30,7 @@ export function PromoSection({ promos: propPromos }: PromoSectionProps) {
   const [banners, setBanners] = useState<Banner[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isLoading, setIsLoading] = useState(!propPromos)
+  const [isPaused, setIsPaused] = useState(false)
 
   useEffect(() => {
     if (!propPromos) {
@@ -68,6 +69,17 @@ export function PromoSection({ promos: propPromos }: PromoSectionProps) {
     }))
   }, [propPromos, banners])
 
+  // Auto-play carousel every 5 seconds
+  useEffect(() => {
+    if (displayItems.length <= 1) return
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % displayItems.length)
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [displayItems.length])
+
   if (isLoading || displayItems.length === 0) return null
 
   const nextSlide = () => {
@@ -102,7 +114,11 @@ export function PromoSection({ promos: propPromos }: PromoSectionProps) {
   // Multiple banners - with carousel
   return (
     <section className="container-page py-6">
-      <div className="relative overflow-hidden rounded-2xl group">
+      <div
+        className="relative overflow-hidden rounded-2xl group"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
@@ -164,7 +180,8 @@ function BannerContent({ item }: { item: { title: string; description: string; i
         fill
         className="object-cover transition-transform duration-500 group-hover:scale-105"
       />
-      <div className="absolute inset-0 bg-gradient-to-r from-primary-600/80 to-accent-purple/80" />
+      <div className="absolute inset-0 bg-gradient-to-r from-dark-100/90 via-dark-100/70 to-dark-100/50" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
       <div className="absolute inset-0 flex items-center">
         <div className="container-page">
           <div className="max-w-xl">
