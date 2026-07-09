@@ -81,13 +81,13 @@ function LoginForm() {
     >
       {/* Logo */}
       <div className="text-center mb-8">
-        <Link href="/dashboard/riwayat" className="inline-block">
+        <Link href="/" className="inline-block">
           <Image
             src="/logo-topup-kilat.png"
             alt="Topup Kilat"
-            width={64}
-            height={64}
-            className="w-16 h-16 rounded-xl object-contain"
+            width={80}
+            height={80}
+            className="w-20 h-20 rounded-xl object-contain"
           />
         </Link>
       </div>

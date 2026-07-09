@@ -68,13 +68,13 @@ export function Header() {
       <div className="container-page">
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
-          <Link href="/dashboard/riwayat" className="flex items-center gap-2 group">
+          <Link href="/" className="flex items-center gap-2 group">
             <Image
               src="/logo-topup-kilat.png"
               alt="Topup Kilat"
-              width={40}
-              height={40}
-              className="w-10 h-10 rounded-xl object-contain"
+              width={48}
+              height={48}
+              className="w-12 h-12 rounded-xl object-contain"
             />
           </Link>
 
