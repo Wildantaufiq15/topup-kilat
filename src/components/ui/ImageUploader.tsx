@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef } from 'react'
-import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react'
+import { Upload, X, Image as ImageIcon, Loader2, Link } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 
@@ -29,6 +29,8 @@ export function ImageUploader({
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [urlInput, setUrlInput] = useState('')
+  const [showUrlInput, setShowUrlInput] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const aspectRatioClasses = {
@@ -119,6 +121,14 @@ export function ImageUploader({
     }
   }, [handleFile])
 
+  const handleUrlSubmit = useCallback(() => {
+    if (urlInput.trim()) {
+      onChange(urlInput.trim())
+      setUrlInput('')
+      setShowUrlInput(false)
+    }
+  }, [urlInput, onChange])
+
   const handleClear = useCallback(() => {
     onChange('')
     if (fileInputRef.current) {
@@ -147,56 +157,105 @@ export function ImageUploader({
       )}
 
       {/* Drop Zone */}
-      {!value && (
+      {!value && !showUrlInput && (
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
-          onClick={() => fileInputRef.current?.click()}
-          className={cn(
-            'relative border-2 border-dashed rounded-lg transition-all cursor-pointer',
-            'hover:border-primary-500/50 hover:bg-primary-500/5',
-            isDragging
-              ? 'border-primary-500 bg-primary-500/10'
-              : 'border-white/10 bg-dark-100/50',
-            isUploading && 'pointer-events-none opacity-50',
-            aspectRatioClasses[aspectRatio]
-          )}
+          className="space-y-2"
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={accept}
-            onChange={handleInputChange}
-            className="hidden"
-          />
-
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-            {isUploading ? (
-              <>
-                <Loader2 size={32} className="text-primary-400 animate-spin mb-2" />
-                <p className="text-sm text-white/60">Mengupload...</p>
-              </>
-            ) : (
-              <>
-                <div className={cn(
-                  'w-12 h-12 rounded-full flex items-center justify-center mb-3',
-                  isDragging ? 'bg-primary-500/20' : 'bg-white/5'
-                )}>
-                  {isDragging ? (
-                    <Upload size={24} className="text-primary-400" />
-                  ) : (
-                    <ImageIcon size={24} className="text-white/40" />
-                  )}
-                </div>
-                <p className="text-sm text-white/60 text-center mb-1">
-                  {isDragging ? 'Lepaskan file di sini' : 'Seret gambar ke sini atau klik untuk pilih'}
-                </p>
-                <p className="text-xs text-white/40">
-                  Format: JPG, PNG, WEBP (Max {maxSize}MB)
-                </p>
-              </>
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className={cn(
+              'relative border-2 border-dashed rounded-lg transition-all cursor-pointer',
+              'hover:border-primary-500/50 hover:bg-primary-500/5',
+              isDragging
+                ? 'border-primary-500 bg-primary-500/10'
+                : 'border-white/10 bg-dark-100/50',
+              isUploading && 'pointer-events-none opacity-50',
+              aspectRatioClasses[aspectRatio]
             )}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={accept}
+              onChange={handleInputChange}
+              className="hidden"
+            />
+
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+              {isUploading ? (
+                <>
+                  <Loader2 size={32} className="text-primary-400 animate-spin mb-2" />
+                  <p className="text-sm text-white/60">Mengupload...</p>
+                </>
+              ) : (
+                <>
+                  <div className={cn(
+                    'w-12 h-12 rounded-full flex items-center justify-center mb-3',
+                    isDragging ? 'bg-primary-500/20' : 'bg-white/5'
+                  )}>
+                    {isDragging ? (
+                      <Upload size={24} className="text-primary-400" />
+                    ) : (
+                      <ImageIcon size={24} className="text-white/40" />
+                    )}
+                  </div>
+                  <p className="text-sm text-white/60 text-center mb-1">
+                    {isDragging ? 'Lepaskan file di sini' : 'Seret gambar ke sini atau klik untuk pilih'}
+                  </p>
+                  <p className="text-xs text-white/40">
+                    Format: JPG, PNG, WEBP (Max {maxSize}MB)
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* URL Toggle */}
+          <button
+            type="button"
+            onClick={() => setShowUrlInput(true)}
+            className="w-full py-2 text-xs text-white/50 hover:text-white/70 bg-dark-100/50 hover:bg-dark-100 rounded-lg border border-white/5 hover:border-white/10 transition-all flex items-center justify-center gap-2"
+          >
+            <Link size={12} />
+            Gunakan URL gambar
+          </button>
+        </div>
+      )}
+
+      {/* URL Input */}
+      {!value && showUrlInput && (
+        <div className="space-y-2">
+          <div className="relative">
+            <Link size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+            <input
+              type="url"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleUrlSubmit()}
+              placeholder="https://example.com/image.png"
+              className="w-full pl-9 pr-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-primary-500 placeholder-white/30"
+              autoFocus
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setShowUrlInput(false)}
+              className="flex-1 py-2 text-xs text-white/50 hover:text-white/70 bg-dark-100/50 hover:bg-dark-100 rounded-lg border border-white/5 transition-all"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={handleUrlSubmit}
+              disabled={!urlInput.trim()}
+              className="flex-1 py-2 text-xs font-medium bg-primary-500 hover:bg-primary-600 disabled:bg-primary-500/50 disabled:cursor-not-allowed text-white rounded-lg transition-all"
+            >
+              Gunakan URL
+            </button>
           </div>
         </div>
       )}
@@ -204,15 +263,6 @@ export function ImageUploader({
       {/* Error Message */}
       {error && (
         <p className="text-xs text-red-400">{error}</p>
-      )}
-
-      {/* URL Input (Alternative) */}
-      {showPreview && (
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-px bg-white/10" />
-          <span className="text-xs text-white/40">atau</span>
-          <div className="flex-1 h-px bg-white/10" />
-        </div>
       )}
     </div>
   )

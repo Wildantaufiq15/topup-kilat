@@ -1,0 +1,27 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" rx="24" fill="#0c1a2e"/>
+  <rect width="200" height="200" rx="24" fill="url(#wo-gradient)"/>
+  <defs>
+    <linearGradient id="wo-gradient" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1e3a5f"/>
+      <stop offset="50%" stop-color="#0c4a6e"/>
+      <stop offset="100%" stop-color="#0c1a2e"/>
+    </linearGradient>
+  </defs>
+  <!-- Snowflake patterns -->
+  <circle cx="100" cy="95" r="50" fill="#ffffff" fill-opacity="0.95"/>
+  <!-- Mountain with snow -->
+  <polygon points="100,50 150,120 50,120" fill="#e0f2fe"/>
+  <polygon points="100,50 130,95 70,95" fill="#bae6fd"/>
+  <!-- Snow particles -->
+  <circle cx="60" cy="70" r="4" fill="#ffffff" fill-opacity="0.6"/>
+  <circle cx="140" cy="65" r="3" fill="#ffffff" fill-opacity="0.4"/>
+  <circle cx="150" cy="85" r="2" fill="#ffffff" fill-opacity="0.5"/>
+  <circle cx="50" cy="80" r="3" fill="#ffffff" fill-opacity="0.3"/>
+  <circle cx="80" cy="55" r="2" fill="#ffffff" fill-opacity="0.4"/>
+  <circle cx="125" cy="60" r="3" fill="#ffffff" fill-opacity="0.5"/>
+  <!-- Survival text -->
+  <rect x="60" y="135" width="80" height="10" rx="5" fill="#0c4a6e"/>
+  <text x="100" y="143" text-anchor="middle" fill="#ffffff" font-family="Arial Black, sans-serif" font-size="8" font-weight="900">SURVIVAL</text>
+  <text x="100" y="175" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="10" font-weight="bold" letter-spacing="0.5">WHITEOUT</text>
+</svg>

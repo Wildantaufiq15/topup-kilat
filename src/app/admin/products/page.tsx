@@ -12,6 +12,11 @@ import {
   XCircle,
   ChevronLeft,
   ChevronRight,
+  Star,
+  Globe,
+  Eye,
+  EyeOff,
+  ImagePlus,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
@@ -23,8 +28,12 @@ interface Game {
   id: string
   name: string
   slug: string
-  logo: string
+  logo: string | null
+  banner: string | null
   category: string
+  description: string | null
+  featured: boolean
+  requires_serverId: boolean
   sort_order: number
   is_active: boolean
   created_at: string
@@ -230,54 +239,141 @@ export default function ProductsPage() {
             Kelola game dan nominal/top-up item
           </p>
         </div>
-        <Button
-          variant="primary"
-          onClick={() => {
-            setEditingGame(null)
-            setShowGameModal(true)
-          }}
-        >
-          <Plus size={18} />
-          Tambah Game
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={fetchGames}
+          >
+            <RefreshCw size={16} />
+          </Button>
+        </div>
       </div>
 
       {/* Game Selector */}
       <div className="bg-surface-primary rounded-xl border border-white/5 p-4">
-        <h3 className="text-white font-medium mb-3">Pilih Game</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-white font-medium">Pilih Game</h3>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              setEditingGame(null)
+              setShowGameModal(true)
+            }}
+          >
+            <Plus size={14} />
+            Tambah
+          </Button>
+        </div>
         <div className="flex flex-wrap gap-2">
           {games.map((game) => (
-            <button
+            <div
               key={game.id}
-              onClick={() => setSelectedGame(game)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all group ${
                 selectedGame?.id === game.id
                   ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
                   : 'bg-dark-100 text-white/70 hover:text-white hover:bg-white/5 border border-transparent'
               }`}
             >
-              {game.logo ? (
-                <img src={game.logo} alt={game.name} className="w-6 h-6 rounded object-cover" />
-              ) : (
-                <Image size={16} />
-              )}
-              <span className="text-sm">{game.name}</span>
-              {!game.is_active && (
-                <XCircle size={14} className="text-red-400" />
-              )}
-            </button>
+              <button
+                onClick={() => setSelectedGame(game)}
+                className="flex items-center gap-2"
+              >
+                {game.logo ? (
+                  <img src={game.logo} alt={game.name} className="w-6 h-6 rounded object-cover" />
+                ) : (
+                  <div className="w-6 h-6 rounded bg-white/10 flex items-center justify-center">
+                    <Image size={12} />
+                  </div>
+                )}
+                <span className="text-sm">{game.name}</span>
+                {game.featured && (
+                  <Star size={12} className="text-yellow-400" />
+                )}
+                {!game.is_active && (
+                  <XCircle size={14} className="text-red-400" />
+                )}
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setEditingGame(game)
+                  setShowGameModal(true)
+                }}
+                className="p-1 opacity-0 group-hover:opacity-100 text-white/40 hover:text-primary-400 transition-all"
+              >
+                <Edit size={14} />
+              </button>
+            </div>
           ))}
+          {games.length === 0 && (
+            <p className="text-sm text-white/50 py-4">Belum ada game. Klik "Tambah" untuk membuat game baru.</p>
+          )}
         </div>
       </div>
 
       {/* Products Table */}
       {selectedGame && (
         <div className="bg-surface-primary rounded-xl border border-white/5 overflow-hidden">
-          <div className="p-4 border-b border-white/5 flex items-center justify-between">
-            <div>
-              <h3 className="text-white font-medium">{selectedGame.name}</h3>
-              <p className="text-white/50 text-sm">{selectedGame.category}</p>
+          {/* Game Info Header */}
+          <div className="relative h-32 bg-gradient-to-r from-primary-900/50 to-purple-900/50">
+            {selectedGame.banner ? (
+              <img
+                src={selectedGame.banner}
+                alt={selectedGame.name}
+                className="w-full h-full object-cover opacity-30"
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-600/20 to-purple-600/20" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-surface-primary to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-4 flex items-center gap-4">
+              <div className="w-16 h-16 rounded-xl overflow-hidden bg-surface-primary border-2 border-white/10 shadow-xl">
+                {selectedGame.logo ? (
+                  <img src={selectedGame.logo} alt={selectedGame.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/30">
+                    <Image size={24} />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-white">{selectedGame.name}</h3>
+                  {selectedGame.featured && (
+                    <span className="px-2 py-0.5 text-[10px] font-bold bg-yellow-500/20 text-yellow-400 rounded-full flex items-center gap-1">
+                      <Star size={10} />
+                      Featured
+                    </span>
+                  )}
+                  <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${
+                    selectedGame.is_active
+                      ? 'bg-green-500/20 text-green-400'
+                      : 'bg-red-500/20 text-red-400'
+                  }`}>
+                    {selectedGame.is_active ? 'Aktif' : 'Nonaktif'}
+                  </span>
+                </div>
+                <p className="text-sm text-white/60">{selectedGame.category} • {selectedGame.description || 'Tidak ada deskripsi'}</p>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  setEditingGame(selectedGame)
+                  setShowGameModal(true)
+                }}
+              >
+                <Edit size={14} />
+                Edit Game
+              </Button>
             </div>
+          </div>
+
+          {/* Products Table */}
+          <div className="p-4 border-b border-white/5 flex items-center justify-between">
+            <h4 className="text-white font-medium">Daftar Produk</h4>
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
@@ -441,10 +537,21 @@ function GameModal({
     name: game?.name || '',
     slug: game?.slug || '',
     logo: game?.logo || '',
+    banner: game?.banner || '',
     category: game?.category || 'MOBILE',
+    description: game?.description || '',
+    featured: game?.featured || false,
+    requires_serverId: game?.requires_serverId || true,
+    is_active: game?.is_active !== undefined ? game.is_active : true,
     sort_order: game?.sort_order || 1,
   })
-  const [logoMode, setLogoMode] = useState<'upload' | 'url'>(form.logo?.startsWith('http') ? 'url' : 'upload')
+  const [logoMode, setLogoMode] = useState<'upload' | 'url'>(
+    form.logo?.startsWith('http') ? 'url' : 'upload'
+  )
+  const [bannerMode, setBannerMode] = useState<'upload' | 'url'>(
+    form.banner?.startsWith('http') ? 'url' : 'upload'
+  )
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   const categories = ['MOBILE', 'PC', 'CONSOLE', 'VOUCHER', 'OTHER']
 
@@ -454,19 +561,48 @@ function GameModal({
     setForm({ ...form, name, slug: game?.slug || slug })
   }
 
+  // Toggle boolean fields
+  const toggleField = (field: 'featured' | 'requires_serverId' | 'is_active') => {
+    setForm({ ...form, [field]: !form[field] })
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-surface-primary rounded-xl border border-white/5 w-full max-w-md max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <div className="bg-surface-primary rounded-xl border border-white/5 w-full max-w-lg max-h-[95vh] overflow-y-auto">
         <div className="p-4 border-b border-white/5 flex items-center justify-between sticky top-0 bg-surface-primary z-10">
-          <h2 className="text-lg font-bold text-white">
-            {game ? 'Edit Game' : 'Tambah Game Baru'}
-          </h2>
-          <button onClick={onClose} className="text-white/50 hover:text-white">✕</button>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg overflow-hidden bg-dark-100">
+              {form.logo ? (
+                <img src={form.logo} alt="Preview" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white/30">
+                  <Image size={20} />
+                </div>
+              )}
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-white">
+                {game ? 'Edit Game' : 'Tambah Game Baru'}
+              </h2>
+              <p className="text-xs text-white/50">
+                {game ? `Edit: ${game.name}` : 'Tambah game baru ke catalog'}
+              </p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-white/50 hover:text-white p-2">
+            ✕
+          </button>
         </div>
-        <div className="p-4 space-y-4">
+
+        <div className="p-4 space-y-5">
           {/* Logo Upload */}
           <div>
-            <label className="block text-sm text-white/70 mb-2">Logo Game</label>
+            <label className="block text-sm text-white/70 mb-2">
+              <span className="flex items-center gap-2">
+                <Image size={14} />
+                Logo Game
+              </span>
+            </label>
             <div className="flex gap-2 mb-3">
               <button
                 type="button"
@@ -477,7 +613,7 @@ function GameModal({
                     : 'bg-dark-100 text-white/50 border border-white/5'
                 }`}
               >
-                Upload Gambar
+                Upload File
               </button>
               <button
                 type="button"
@@ -511,54 +647,213 @@ function GameModal({
             )}
           </div>
 
+          {/* Banner Upload */}
           <div>
-            <label className="block text-sm text-white/70 mb-1">Nama Game</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => handleNameChange(e.target.value)}
-              className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-500"
-              placeholder="Mobile Legends"
-            />
+            <label className="block text-sm text-white/70 mb-2">
+              <span className="flex items-center gap-2">
+                <ImagePlus size={14} />
+                Banner Game (Opsional)
+              </span>
+            </label>
+            <div className="flex gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setBannerMode('upload')}
+                className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
+                  bannerMode === 'upload'
+                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                    : 'bg-dark-100 text-white/50 border border-white/5'
+                }`}
+              >
+                Upload File
+              </button>
+              <button
+                type="button"
+                onClick={() => setBannerMode('url')}
+                className={`flex-1 py-2 text-xs font-medium rounded-lg transition-all ${
+                  bannerMode === 'url'
+                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                    : 'bg-dark-100 text-white/50 border border-white/5'
+                }`}
+              >
+                URL Gambar
+              </button>
+            </div>
+
+            {bannerMode === 'upload' ? (
+              <ImageUploader
+                value={form.banner}
+                onChange={(url) => setForm({ ...form, banner: url })}
+                aspectRatio="video"
+                maxSize={5}
+                folder="game-banners"
+              />
+            ) : (
+              <input
+                type="url"
+                value={form.banner}
+                onChange={(e) => setForm({ ...form, banner: e.target.value })}
+                className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-primary-500 placeholder-white/30"
+                placeholder="https://example.com/banner.jpg"
+              />
+            )}
+            <p className="text-xs text-white/40 mt-1">Ukuran disarankan: 1280x720px</p>
           </div>
-          <div>
-            <label className="block text-sm text-white/70 mb-1">Slug</label>
-            <input
-              type="text"
-              value={form.slug}
-              onChange={(e) => setForm({ ...form, slug: e.target.value })}
-              className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-primary-500"
-              placeholder="mobile-legends"
-            />
+
+          {/* Basic Info */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="block text-sm text-white/70 mb-1">Nama Game</label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                placeholder="Mobile Legends"
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm text-white/70 mb-1">Slug</label>
+              <input
+                type="text"
+                value={form.slug}
+                onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-primary-500"
+                placeholder="mobile-legends"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-white/70 mb-1">Kategori</label>
+              <select
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-500"
+              >
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm text-white/70 mb-1">Urutan</label>
+              <input
+                type="number"
+                value={form.sort_order}
+                onChange={(e) => setForm({ ...form, sort_order: parseInt(e.target.value) || 1 })}
+                className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                min={1}
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm text-white/70 mb-1">Deskripsi</label>
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-primary-500 resize-none"
+                placeholder="Deskripsi singkat tentang game..."
+                rows={2}
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm text-white/70 mb-1">Kategori</label>
-            <select
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-500"
+
+          {/* Toggle Options */}
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="flex items-center justify-between w-full px-3 py-2 bg-dark-100 rounded-lg text-sm text-white/70 hover:text-white transition-colors"
             >
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
+              <span>Opsi Tambahan</span>
+              <ChevronRight size={16} className={`transition-transform ${showAdvanced ? 'rotate-90' : ''}`} />
+            </button>
+
+            {showAdvanced && (
+              <div className="space-y-2 pt-2">
+                {/* Featured Toggle */}
+                <div
+                  onClick={() => toggleField('featured')}
+                  className="flex items-center justify-between px-3 py-2.5 bg-dark-100 rounded-lg cursor-pointer hover:bg-white/5 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Star size={16} className={form.featured ? 'text-yellow-400' : 'text-white/40'} />
+                    <div>
+                      <span className="text-sm text-white">Featured</span>
+                      <p className="text-xs text-white/40">Tampil di halaman utama</p>
+                    </div>
+                  </div>
+                  <div className={`w-10 h-6 rounded-full transition-colors ${form.featured ? 'bg-primary-500' : 'bg-white/10'}`}>
+                    <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${form.featured ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`} />
+                  </div>
+                </div>
+
+                {/* Requires Server ID Toggle */}
+                <div
+                  onClick={() => toggleField('requires_serverId')}
+                  className="flex items-center justify-between px-3 py-2.5 bg-dark-100 rounded-lg cursor-pointer hover:bg-white/5 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Globe size={16} className={form.requires_serverId ? 'text-accent-cyan' : 'text-white/40'} />
+                    <div>
+                      <span className="text-sm text-white">Butuh Server ID</span>
+                      <p className="text-xs text-white/40">Pengguna harus input Server ID saat order</p>
+                    </div>
+                  </div>
+                  <div className={`w-10 h-6 rounded-full transition-colors ${form.requires_serverId ? 'bg-accent-cyan' : 'bg-white/10'}`}>
+                    <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${form.requires_serverId ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`} />
+                  </div>
+                </div>
+
+                {/* Active Toggle */}
+                <div
+                  onClick={() => toggleField('is_active')}
+                  className="flex items-center justify-between px-3 py-2.5 bg-dark-100 rounded-lg cursor-pointer hover:bg-white/5 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    {form.is_active ? (
+                      <Eye size={16} className="text-green-400" />
+                    ) : (
+                      <EyeOff size={16} className="text-red-400" />
+                    )}
+                    <div>
+                      <span className="text-sm text-white">Status</span>
+                      <p className="text-xs text-white/40">{form.is_active ? 'Game aktif & bisa dipesan' : 'Game nonaktif'}</p>
+                    </div>
+                  </div>
+                  <div className={`w-10 h-6 rounded-full transition-colors ${form.is_active ? 'bg-green-500' : 'bg-red-500'}`}>
+                    <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${form.is_active ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`} />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
+
         <div className="p-4 border-t border-white/5 flex items-center justify-between sticky bottom-0 bg-surface-primary">
           {onDelete && (
             <button
               onClick={onDelete}
-              className="px-4 py-2 text-red-400 hover:text-red-300"
+              className="px-4 py-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
             >
-              Hapus
+              Hapus Game
             </button>
           )}
           <div className="flex items-center gap-3 ml-auto">
             <Button variant="secondary" onClick={onClose}>Batal</Button>
             <Button
               variant="primary"
-              onClick={() => onSave(form)}
-              disabled={!form.name}
+              onClick={() => onSave({
+                name: form.name,
+                slug: form.slug,
+                logo: form.logo || null,
+                banner: form.banner || null,
+                category: form.category,
+                description: form.description || null,
+                featured: form.featured,
+                requires_serverId: form.requires_serverId,
+                is_active: form.is_active,
+                sort_order: form.sort_order,
+              })}
+              disabled={!form.name || !form.slug}
             >
               Simpan
             </Button>

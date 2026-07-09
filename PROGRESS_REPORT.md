@@ -326,6 +326,38 @@ User → Vercel (Frontend) → VPS Proxy (Static IP) → Digiflazz API
 
 ## 📝 Catatan Sesi
 
+### 9 Juli 2026 - Enhanced Admin Products & Whiteout Survival
+
+#### Fitur Baru:
+
+**1. Whiteout Survival Logo**
+- Logo SVG baru untuk Whiteout Survival
+- Desain dengan tema survival di daerah bersalju
+
+**2. Enhanced Admin Products Page**
+- **Banner Upload** - Admin bisa upload banner game dengan drag & drop
+- **Edit Game Lengkap** - Edit nama, slug, logo, banner, deskripsi, kategori
+- **Toggle Options**:
+  - Featured (tampil di halaman utama)
+  - Requires Server ID (butuh input server ID saat order)
+  - Active/Inactive status
+- **Game Header dengan Banner** - Preview banner dan logo game di header
+- **Quick Edit** - Tombol edit di samping nama game
+
+**3. Enhanced Image Uploader**
+- Toggle antara upload file dan URL
+- Better UI dengan tombol "Gunakan URL gambar"
+- Support aspect ratio: square (logo) dan video (banner)
+- Max size configurable
+
+#### Files Updated:
+1. `public/images/games/whiteout-survival.svg` - Logo baru (NEW)
+2. `src/app/admin/products/page.tsx` - Enhanced dengan banner dan edit lengkap
+3. `src/components/ui/ImageUploader.tsx` - Enhanced dengan URL toggle
+4. `tailwind.config.ts` - Added aspect-ratio plugin
+
+---
+
 ### 9 Juli 2026 - Logo Game SVG & Image Uploader untuk Admin
 
 #### Fitur Baru:

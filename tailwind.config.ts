@@ -107,9 +107,15 @@ const config: Config = {
         'card': '0 4px 20px rgba(0, 0, 0, 0.3)',
         'card-hover': '0 8px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 240, 255, 0.1)',
       },
+      aspectRatio: {
+        'square': '1 / 1',
+        'video': '16 / 9',
+      },
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/aspect-ratio'),
+  ],
 }
 
 export default config
