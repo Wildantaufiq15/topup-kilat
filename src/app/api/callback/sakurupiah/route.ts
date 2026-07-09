@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import {
+  notifyAdminNewOrder,
+  notifyAdminPaymentReceived,
+  notifyAdminPaymentExpired,
+  notifyCustomerOrderSuccess,
+} from '@/lib/fonnte'
 
 // Initialize Supabase admin client (server-side)
 const supabaseAdmin = createClient(
@@ -173,6 +179,25 @@ export async function POST(request: NextRequest) {
     paymentId = paymentData.id
     console.log(`[${requestId}] Updating payment:`, paymentId, 'to status:', paymentStatus)
 
+    // Get order and game info for notification
+    let orderData: any = null
+    let gameData: any = null
+    let userData: any = null
+
+    if (paymentData.order_id) {
+      const { data: order } = await supabaseAdmin
+        .from('orders')
+        .select('*, game:games(name), product:game_products(name), user:users(name, phone)')
+        .eq('id', paymentData.order_id)
+        .single()
+
+      if (order) {
+        orderData = order
+        gameData = order.game
+        userData = order.user
+      }
+    }
+
     // Update payment status
     const { error: paymentError } = await supabaseAdmin
       .from('payments')
@@ -193,6 +218,18 @@ export async function POST(request: NextRequest) {
 
     console.log(`[${requestId}] Payment updated successfully`)
 
+    // Prepare notification data
+    const notificationData = orderData ? {
+      invoiceNo: orderData.invoice_no,
+      gameName: gameData?.name || 'Unknown Game',
+      productName: orderData.product?.name || 'Unknown Product',
+      userGameId: orderData.user_game_id,
+      serverId: orderData.server_id,
+      total: orderData.total,
+      paymentMethod: data.payment_kode || paymentData.method || 'Unknown',
+      status: orderStatus as any,
+    } : null
+
     // Update order status
     if (paymentData.order_id) {
       console.log(`[${requestId}] Updating order:`, paymentData.order_id, 'to status:', orderStatus)
@@ -211,6 +248,24 @@ export async function POST(request: NextRequest) {
         // Continue anyway - payment is updated
       } else {
         console.log(`[${requestId}] Order updated successfully`)
+      }
+
+      // Send WhatsApp notifications based on payment status
+      if (notificationData) {
+        // Send notification to admin based on status
+        if (status === 'berhasil') {
+          console.log(`[${requestId}] Sending payment received notification to admin`)
+          await notifyAdminPaymentReceived(notificationData)
+        } else if (status === 'expired') {
+          console.log(`[${requestId}] Sending payment expired notification to admin`)
+          await notifyAdminPaymentExpired(notificationData)
+        }
+
+        // Send notification to customer if payment successful
+        if (status === 'berhasil' && userData?.phone) {
+          console.log(`[${requestId}] Sending order success notification to customer`)
+          await notifyCustomerOrderSuccess(userData.phone, notificationData)
+        }
       }
 
       // If payment successful, trigger supplier delivery (future)

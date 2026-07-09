@@ -37,7 +37,9 @@
       "WebFetch(domain:www.rumahweb.com)",
       "WebFetch(domain:www.hetzner.com)",
       "WebFetch(domain:www.idcloudhost.com)",
-      "WebFetch(domain:www.domainesia.com)"
+      "WebFetch(domain:www.domainesia.com)",
+      "Bash(Get-Content \"E:\\\\Website\\\\TopupKilat\\\\.env.local\")",
+      "Bash(Select-Object -Last 10)"
     ]
   }
 }

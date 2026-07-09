@@ -288,14 +288,13 @@ User → Vercel (Frontend) → VPS Proxy (Static IP) → Digiflazz API
 
 ### High Priority
 1. **Digiflazz Integration** - Setup VPS proxy (PENDING)
-2. **Email Notifications** - Butuh server dengan IP static
+2. ~~**WhatsApp Notifications**~~ - ✅ COMPLETE (Fonnte)
 3. **Custom Domain** - Branding untuk production
 
 ### Medium Priority
 1. Invoice PDF download
 2. Google Analytics integration
-3. WhatsApp notifications
-4. Real-time order status
+3. ~~WhatsApp notifications to customer~~ - ✅ DONE
 
 ### Low Priority
 1. Mobile app
@@ -326,6 +325,78 @@ User → Vercel (Frontend) → VPS Proxy (Static IP) → Digiflazz API
 ---
 
 ## 📝 Catatan Sesi
+
+### 9 Juli 2026 - Fitur Lupa Password & Search Game
+
+#### Fitur Baru:
+
+**1. Halaman Lupa Password (`/forgot-password`)**
+- Toggle antara reset via Email atau WhatsApp/OTP
+- Form input dengan validasi
+- Halaman sukses setelah submit
+- Tips keamanan (cek spam, link berlaku 1 jam)
+- Link kembali ke halaman login
+- Responsive design dengan animasi
+
+**2. Search Game di Halaman Games (`/games`)**
+- Search bar dengan icon dan clear button
+- Filter real-time berdasarkan nama, kategori, dan deskripsi game
+- Hasil pencarian dengan count
+- Clear search untuk reset filter
+- Placeholder yang informatif
+
+#### Files Created/Updated:
+1. `src/app/forgot-password/page.tsx` - Halaman forgot password (NEW)
+2. `src/app/games/components/GamesHeader.tsx` - Add search props
+3. `src/app/games/page.tsx` - Add search functionality dengan useMemo
+
+---
+
+### 9 Juli 2026 - Fitur Lupa Password, Search Game & Notifikasi Fonnte
+
+#### Fitur Baru:
+
+**1. Halaman Lupa Password (`/forgot-password`)**
+- Toggle antara reset via Email atau WhatsApp/OTP
+- Form input dengan validasi
+- Halaman sukses setelah submit
+- Tips keamanan (cek spam, link berlaku 1 jam)
+- Link kembali ke halaman login
+- Responsive design dengan animasi
+
+**2. Search Game di Halaman Games (`/games`)**
+- Search bar dengan icon dan clear button
+- Filter real-time berdasarkan nama, kategori, dan deskripsi game
+- Hasil pencarian dengan count
+- Clear search untuk reset filter
+- Placeholder yang informatif
+
+**3. Fonnte WhatsApp Integration (`/lib/fonnte.ts`)**
+- Notifikasi ke admin saat pesanan baru dibuat
+- Notifikasi ke admin saat pembayaran berhasil
+- Notifikasi ke admin saat pembayaran expired
+- Notifikasi ke customer saat pesanan berhasil
+- Template pesan dengan emoji dan formatting
+- Format nomor otomatis (08xxx → 628xxx)
+
+#### Files Created/Updated:
+1. `src/app/forgot-password/page.tsx` - Halaman forgot password (NEW)
+2. `src/app/games/components/GamesHeader.tsx` - Add search props
+3. `src/app/games/page.tsx` - Add search functionality dengan useMemo
+4. `src/lib/fonnte.ts` - Fonnte WhatsApp API client (NEW)
+5. `src/app/api/callback/sakurupiah/route.ts` - Add Fonnte notifications
+6. `src/app/api/payments/create/route.ts` - Add Fonnte notifications
+7. `.env.local` - Add FONNTE_API_KEY and ADMIN_WHATSAPP_NUMBER
+8. `.env.example` - Add Fonnte env vars
+
+#### Environment Variables Required:
+```env
+# Fonnte WhatsApp API
+FONNTE_API_KEY=your_fonnte_api_key_here
+ADMIN_WHATSAPP_NUMBER=08xxxxxxxxx
+```
+
+---
 
 ### 9 Juli 2026 - Admin Panel COMPLETE!
 

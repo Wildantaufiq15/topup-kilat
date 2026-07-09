@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createInvoice } from '@/lib/sakurupiah'
+import { notifyAdminNewOrder } from '@/lib/fonnte'
 
 // Server-side Supabase client
 const supabase = createClient(
@@ -10,6 +11,7 @@ const supabase = createClient(
 
 interface CreatePaymentRequest {
   orderId: string
+  invoiceNo?: string
   method: string
   gameName: string
   productName: string
@@ -17,6 +19,8 @@ interface CreatePaymentRequest {
   userName: string
   userEmail: string
   userPhone: string
+  userGameId?: string
+  serverId?: string
 }
 
 // Map our method format to Sakurupiah format
@@ -111,6 +115,27 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+
+    // Send WhatsApp notification to admin about new order
+    console.log('Sending new order notification to admin...')
+    notifyAdminNewOrder({
+      invoiceNo: body.invoiceNo || `TK-${orderId.slice(0, 8)}`,
+      gameName: gameName || 'Unknown Game',
+      productName: productName || 'Unknown Product',
+      userGameId: body.userGameId || '-',
+      serverId: body.serverId,
+      total: invoice.total,
+      paymentMethod: sakurupiahMethod,
+      status: 'PENDING',
+    }).then(result => {
+      if (result.status) {
+        console.log('Admin notification sent successfully')
+      } else {
+        console.log('Admin notification failed:', result.reason)
+      }
+    }).catch(err => {
+      console.error('Admin notification error:', err)
+    })
 
     return NextResponse.json({
       success: true,

@@ -1,12 +1,14 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Search, Filter } from 'lucide-react'
-import { useState } from 'react'
+import { Search, Filter, X } from 'lucide-react'
 
-export function GamesHeader() {
-  const [searchQuery, setSearchQuery] = useState('')
+interface GamesHeaderProps {
+  searchQuery: string
+  onSearchChange: (query: string) => void
+}
 
+export function GamesHeader({ searchQuery, onSearchChange }: GamesHeaderProps) {
   return (
     <div className="bg-dark-100/50 border-b border-white/5">
       <div className="container-page py-8">
@@ -39,11 +41,19 @@ export function GamesHeader() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
             <input
               type="text"
-              placeholder="Cari game..."
+              placeholder="Cari game... (ML, FF, Genshin, dll)"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 bg-surface-primary rounded-xl border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="w-full pl-12 pr-12 py-3 bg-surface-primary rounded-xl border border-white/10 text-white placeholder:text-white/40 focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all"
             />
+            {searchQuery && (
+              <button
+                onClick={() => onSearchChange('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 p-1 rounded-full text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            )}
           </div>
 
           {/* Filter Button */}
