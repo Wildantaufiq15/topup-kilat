@@ -7,7 +7,7 @@
  */
 
 // Fonnte API endpoint
-const FONNTE_API_URL = 'https://api.fonnte.com/api/send-message'
+const FONNTE_API_URL = 'https://api.fonnte.com/send'
 
 interface FonnteResponse {
   status: boolean
@@ -25,6 +25,8 @@ interface SendWhatsAppOptions {
   phone: string // WhatsApp number (format: 08xxxxxxxxx or +62xxxxxxxxx)
   message: string
   fileUrl?: string // Optional: for sending images/documents
+  delay?: string // Delay in seconds (e.g., "2")
+  countryCode?: string // Country code (default: "62")
 }
 
 // Format phone number to Fonnte format (62xxxxxxxxxx)
@@ -67,6 +69,8 @@ export async function sendWhatsApp(options: SendWhatsAppOptions): Promise<Fonnte
     const formData = new FormData()
     formData.append('target', formattedPhone)
     formData.append('message', options.message)
+    formData.append('delay', options.delay || '2')
+    formData.append('countryCode', options.countryCode || '62')
 
     // Add file URL if provided (for sending images/documents)
     if (options.fileUrl) {
@@ -75,9 +79,10 @@ export async function sendWhatsApp(options: SendWhatsAppOptions): Promise<Fonnte
 
     const response = await fetch(FONNTE_API_URL, {
       method: 'POST',
-      headers: {
+      mode: 'cors',
+      headers: new Headers({
         'Authorization': apiKey, // Token directly, no "Bearer" prefix
-      },
+      }),
       body: formData,
     })
 
