@@ -151,17 +151,14 @@ function ForgotPasswordForm() {
     >
       {/* Logo */}
       <div className="text-center mb-8">
-        <Link href="/" className="inline-flex items-center gap-2">
+        <Link href="/dashboard/riwayat" className="inline-block">
           <Image
             src="/logo-topup-kilat.png"
             alt="Topup Kilat"
-            width={48}
-            height={48}
-            className="w-12 h-12 rounded-xl object-contain"
+            width={64}
+            height={64}
+            className="w-16 h-16 rounded-xl object-contain"
           />
-          <span className="font-bold text-2xl text-white">
-            Topup<span className="text-gradient bg-clip-text text-transparent bg-gradient-to-r from-accent-cyan to-primary-400">Kilat</span>
-          </span>
         </Link>
       </div>
 
