@@ -13,6 +13,7 @@ import {
   Users,
   Package,
   RefreshCw,
+  Image as ImageIcon,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
@@ -326,7 +327,7 @@ export default function AdminOverview() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
         <a
           href="/admin/transactions"
           className="p-4 bg-surface-primary rounded-xl border border-white/5 hover:border-white/10 transition-all group"
@@ -342,6 +343,14 @@ export default function AdminOverview() {
           <Package className="w-8 h-8 text-purple-400 mb-2 group-hover:scale-110 transition-transform" />
           <p className="text-white font-medium">Kelola Produk</p>
           <p className="text-white/50 text-sm">Tambah & edit game</p>
+        </a>
+        <a
+          href="/admin/banners"
+          className="p-4 bg-surface-primary rounded-xl border border-white/5 hover:border-white/10 transition-all group"
+        >
+          <ImageIcon className="w-8 h-8 text-accent-cyan mb-2 group-hover:scale-110 transition-transform" />
+          <p className="text-white font-medium">Kelola Banner</p>
+          <p className="text-white/50 text-sm">Banner & iklan carousel</p>
         </a>
         <a
           href="/admin/vouchers"

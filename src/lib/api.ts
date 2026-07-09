@@ -10,6 +10,7 @@ type Order = Database['public']['Tables']['orders']['Row'];
 type Payment = Database['public']['Tables']['payments']['Row'];
 type Voucher = Database['public']['Tables']['vouchers']['Row'];
 type Promo = Database['public']['Tables']['promos']['Row'];
+type Banner = Database['public']['Tables']['promos']['Row'];
 
 // API Client
 class ApiClient {
@@ -362,6 +363,101 @@ class ApiClient {
       .order('sort_order', { ascending: true });
     if (error) throw new Error(error.message);
     return data || [];
+  }
+
+  // ==================== BANNERS ====================
+
+  async getBanners() {
+    const { data, error } = await supabase
+      .from('promos')
+      .select('*')
+      .eq('is_active', true)
+      .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
+      .order('sort_order');
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async getAllBanners() {
+    const { data, error } = await supabase
+      .from('promos')
+      .select('*')
+      .order('sort_order');
+    if (error) throw new Error(error.message);
+    return data;
+  }
+
+  async createBanner(data: {
+    title: string;
+    subtitle?: string;
+    image: string;
+    link?: string;
+    type?: 'BANNER' | 'POPUP' | 'SLIDER';
+    sortOrder?: number;
+    startsAt?: string;
+    expiresAt?: string;
+  }) {
+    const { data: banner, error } = await supabase
+      .from('promos')
+      .insert({
+        title: data.title,
+        subtitle: data.subtitle || null,
+        image: data.image,
+        link: data.link || null,
+        type: data.type || 'BANNER',
+        sort_order: data.sortOrder || 0,
+        is_active: true,
+        starts_at: data.startsAt || new Date().toISOString(),
+        expires_at: data.expiresAt || null,
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return banner;
+  }
+
+  async updateBanner(id: string, data: {
+    title?: string;
+    subtitle?: string;
+    image?: string;
+    link?: string;
+    type?: 'BANNER' | 'POPUP' | 'SLIDER';
+    sortOrder?: number;
+    isActive?: boolean;
+    startsAt?: string;
+    expiresAt?: string;
+  }) {
+    const updateData: Record<string, any> = {};
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.subtitle !== undefined) updateData.subtitle = data.subtitle;
+    if (data.image !== undefined) updateData.image = data.image;
+    if (data.link !== undefined) updateData.link = data.link;
+    if (data.type !== undefined) updateData.type = data.type;
+    if (data.sortOrder !== undefined) updateData.sort_order = data.sortOrder;
+    if (data.isActive !== undefined) updateData.is_active = data.isActive;
+    if (data.startsAt !== undefined) updateData.starts_at = data.startsAt;
+    if (data.expiresAt !== undefined) updateData.expires_at = data.expiresAt;
+
+    const { data: banner, error } = await supabase
+      .from('promos')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    return banner;
+  }
+
+  async deleteBanner(id: string) {
+    const { error } = await supabase
+      .from('promos')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw new Error(error.message);
+    return { message: 'Banner deleted' };
   }
 
   // ==================== PROMOS ====================

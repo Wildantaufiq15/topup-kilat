@@ -16,6 +16,7 @@ import {
   LogOut,
   Menu,
   X,
+  Image as ImageIcon,
 } from 'lucide-react'
 import { AdminGuard } from '@/components/admin/AdminGuard'
 
@@ -34,6 +35,11 @@ const adminNavItems = [
     title: 'Produk',
     href: '/admin/products',
     icon: Package,
+  },
+  {
+    title: 'Banner',
+    href: '/admin/banners',
+    icon: ImageIcon,
   },
   {
     title: 'Voucher',

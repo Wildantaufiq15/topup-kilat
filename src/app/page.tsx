@@ -12,18 +12,13 @@ import { api } from '@/lib/api'
 
 export default function HomePage() {
   const [games, setGames] = useState<any[]>([])
-  const [promos, setPromos] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [gamesData, promosData] = await Promise.all([
-          api.getPopularGames(8),
-          api.getPromoBanners(),
-        ])
+        const gamesData = await api.getPopularGames(8)
         setGames(gamesData)
-        setPromos(promosData)
       } catch (error) {
         console.error('Error fetching homepage data:', error)
       } finally {
@@ -39,8 +34,8 @@ export default function HomePage() {
       {/* Hero Section */}
       <HeroSection />
 
-      {/* Promo Banner */}
-      <PromoSection promos={promos} />
+      {/* Promo Banner - auto fetches banners from API */}
+      <PromoSection />
 
       {/* Popular Games */}
       <section className="container-page py-12">

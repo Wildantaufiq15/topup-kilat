@@ -67,6 +67,25 @@ export interface AuthTokens {
 }
 
 // --------------------------------------------
+// BANNER / CAROUSEL TYPES
+// --------------------------------------------
+export interface Banner {
+  id: string
+  title: string
+  subtitle?: string
+  image: string
+  link?: string
+  type: BannerType
+  isActive: boolean
+  sortOrder: number
+  startsAt: Date
+  expiresAt?: Date
+  createdAt: Date
+}
+
+export type BannerType = 'banner' | 'popup' | 'slider'
+
+// --------------------------------------------
 // VOUCHER & PROMO TYPES
 // --------------------------------------------
 export interface Voucher {

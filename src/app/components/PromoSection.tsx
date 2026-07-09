@@ -1,65 +1,105 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
-import { type Promo } from '@/types'
+import { api } from '@/lib/api'
+import { cn } from '@/lib/utils'
 
-interface PromoSectionProps {
-  promos: Promo[]
+interface Banner {
+  id: string
+  title: string
+  subtitle: string | null
+  image: string
+  link: string | null
+  type: 'BANNER' | 'POPUP' | 'SLIDER'
+  is_active: boolean
+  sort_order: number
+  starts_at: string
+  expires_at: string | null
+  created_at: string
 }
 
-export function PromoSection({ promos }: PromoSectionProps) {
-  const [currentIndex, setCurrentIndex] = useState(0)
+interface PromoSectionProps {
+  promos?: any[] // Backward compatibility
+}
 
-  if (!promos.length) return null
+export function PromoSection({ promos: propPromos }: PromoSectionProps) {
+  const [banners, setBanners] = useState<Banner[]>([])
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isLoading, setIsLoading] = useState(!propPromos)
+
+  useEffect(() => {
+    if (!propPromos) {
+      fetchBanners()
+    }
+  }, [propPromos])
+
+  const fetchBanners = async () => {
+    try {
+      const data = await api.getBanners()
+      setBanners(data || [])
+    } catch (error) {
+      console.error('Error fetching banners:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Use prop promos for backward compatibility, otherwise use banners from API
+  const displayItems = useMemo(() => {
+    if (propPromos && propPromos.length > 0) {
+      return propPromos.map(p => ({
+        id: p.id,
+        title: p.title,
+        description: p.subtitle || p.description || '',
+        image: p.image,
+        link: p.link || '#',
+      }))
+    }
+    return banners.map(b => ({
+      id: b.id,
+      title: b.title,
+      description: b.subtitle || '',
+      image: b.image,
+      link: b.link || '#',
+    }))
+  }, [propPromos, banners])
+
+  if (isLoading || displayItems.length === 0) return null
 
   const nextSlide = () => {
-    setCurrentIndex((prev) => (prev + 1) % promos.length)
+    setCurrentIndex((prev) => (prev + 1) % displayItems.length)
   }
 
   const prevSlide = () => {
-    setCurrentIndex((prev) => (prev - 1 + promos.length) % promos.length)
+    setCurrentIndex((prev) => (prev - 1 + displayItems.length) % displayItems.length)
   }
 
-  if (promos.length === 1) {
+  // Single banner - no carousel needed
+  if (displayItems.length === 1) {
+    const item = displayItems[0]
     return (
       <section className="container-page py-6">
-        <a
-          href={promos[0].link || '#'}
-          className="relative block overflow-hidden rounded-2xl group"
-        >
-          <div className="relative h-40 md:h-56">
-            <Image
-              src={promos[0].image}
-              alt={promos[0].title}
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-primary-600/80 to-accent-purple/80" />
-            <div className="absolute inset-0 flex items-center">
-              <div className="container-page">
-                <div className="max-w-xl">
-                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium mb-3">
-                    <Sparkles size={14} />
-                    Promo
-                  </span>
-                  <h3 className="text-xl md:text-2xl font-bold text-white mb-2">
-                    {promos[0].title}
-                  </h3>
-                  <p className="text-white/80 text-sm hidden sm:block">
-                    {promos[0].description}
-                  </p>
-                </div>
-              </div>
-            </div>
+        {item.link && item.link !== '#' ? (
+          <Link
+            href={item.link}
+            className="relative block overflow-hidden rounded-2xl group"
+          >
+            <BannerContent item={item} />
+          </Link>
+        ) : (
+          <div className="relative overflow-hidden rounded-2xl group">
+            <BannerContent item={item} />
           </div>
-        </a>
+        )}
       </section>
     )
   }
 
+  // Multiple banners - with carousel
   return (
     <section className="container-page py-6">
       <div className="relative overflow-hidden rounded-2xl group">
@@ -70,31 +110,14 @@ export function PromoSection({ promos }: PromoSectionProps) {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
             transition={{ duration: 0.3 }}
-            className="relative h-40 md:h-56"
           >
-            <Image
-              src={promos[currentIndex].image}
-              alt={promos[currentIndex].title}
-              fill
-              className="object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-primary-600/80 to-accent-purple/80" />
-            <div className="absolute inset-0 flex items-center">
-              <div className="container-page w-full">
-                <div className="max-w-xl">
-                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium mb-3">
-                    <Sparkles size={14} />
-                    Promo
-                  </span>
-                  <h3 className="text-xl md:text-2xl font-bold text-white mb-2">
-                    {promos[currentIndex].title}
-                  </h3>
-                  <p className="text-white/80 text-sm hidden sm:block">
-                    {promos[currentIndex].description}
-                  </p>
-                </div>
-              </div>
-            </div>
+            {displayItems[currentIndex].link && displayItems[currentIndex].link !== '#' ? (
+              <Link href={displayItems[currentIndex].link} className="block">
+                <BannerContent item={displayItems[currentIndex]} />
+              </Link>
+            ) : (
+              <BannerContent item={displayItems[currentIndex]} />
+            )}
           </motion.div>
         </AnimatePresence>
 
@@ -114,19 +137,52 @@ export function PromoSection({ promos }: PromoSectionProps) {
 
         {/* Dots */}
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
-          {promos.map((_, index) => (
+          {displayItems.map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentIndex(index)}
-              className={`w-2 h-2 rounded-full transition-all ${
+              className={cn(
+                'w-2 h-2 rounded-full transition-all',
                 index === currentIndex
                   ? 'bg-white w-6'
                   : 'bg-white/30 hover:bg-white/50'
-              }`}
+              )}
             />
           ))}
         </div>
       </div>
     </section>
+  )
+}
+
+function BannerContent({ item }: { item: { title: string; description: string; image: string } }) {
+  return (
+    <div className="relative h-40 md:h-56">
+      <Image
+        src={item.image}
+        alt={item.title}
+        fill
+        className="object-cover transition-transform duration-500 group-hover:scale-105"
+      />
+      <div className="absolute inset-0 bg-gradient-to-r from-primary-600/80 to-accent-purple/80" />
+      <div className="absolute inset-0 flex items-center">
+        <div className="container-page">
+          <div className="max-w-xl">
+            <span className="inline-flex items-center gap-1 px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm font-medium mb-3">
+              <Sparkles size={14} />
+              Promo
+            </span>
+            <h3 className="text-xl md:text-2xl font-bold text-white mb-2">
+              {item.title}
+            </h3>
+            {item.description && (
+              <p className="text-white/80 text-sm hidden sm:block">
+                {item.description}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
