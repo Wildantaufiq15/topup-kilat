@@ -17,6 +17,7 @@ import {
   Eye,
   EyeOff,
   ImagePlus,
+  Trophy,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
@@ -229,6 +230,25 @@ export default function ProductsPage() {
     p.name.toLowerCase().includes(search.toLowerCase())
   )
 
+  // Toggle featured status
+  const handleToggleFeatured = async (game: Game) => {
+    try {
+      const { error } = await supabase
+        .from('games')
+        .update({ featured: !game.featured })
+        .eq('id', game.id)
+
+      if (error) throw error
+      toast.success(game.featured ? 'Game dihapus dari populer' : 'Game ditambahkan ke populer')
+      fetchGames()
+    } catch (error: any) {
+      toast.error(error.message || 'Gagal update status')
+    }
+  }
+
+  // Get featured games
+  const featuredGames = games.filter(g => g.featured)
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -250,10 +270,50 @@ export default function ProductsPage() {
         </div>
       </div>
 
+      {/* Featured Games Section */}
+      <div className="bg-gradient-to-r from-yellow-900/20 to-orange-900/20 rounded-xl border border-yellow-500/20 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Trophy size={18} className="text-yellow-400" />
+          <h3 className="text-white font-medium">Game Populer</h3>
+          <span className="px-2 py-0.5 text-xs bg-yellow-500/20 text-yellow-400 rounded-full">
+            {featuredGames.length} game
+          </span>
+        </div>
+        <p className="text-xs text-white/50 mb-3">Game yang ditampilkan di halaman utama website</p>
+        <div className="flex flex-wrap gap-2">
+          {featuredGames.length > 0 ? (
+            featuredGames.map((game) => (
+              <div
+                key={game.id}
+                className="flex items-center gap-2 px-3 py-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg"
+              >
+                {game.logo ? (
+                  <img src={game.logo} alt={game.name} className="w-6 h-6 rounded object-cover" />
+                ) : (
+                  <div className="w-6 h-6 rounded bg-white/10 flex items-center justify-center">
+                    <Image size={12} />
+                  </div>
+                )}
+                <span className="text-sm text-white font-medium">{game.name}</span>
+                <button
+                  onClick={() => handleToggleFeatured(game)}
+                  className="p-1 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/20 rounded transition-colors"
+                  title="Hapus dari populer"
+                >
+                  <Star size={14} fill="currentColor" />
+                </button>
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-white/50 py-2">Belum ada game populer. Pilih game di bawah.</p>
+          )}
+        </div>
+      </div>
+
       {/* Game Selector */}
       <div className="bg-surface-primary rounded-xl border border-white/5 p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-white font-medium">Pilih Game</h3>
+          <h3 className="text-white font-medium">Semua Game</h3>
           <Button
             variant="primary"
             size="sm"
@@ -288,12 +348,18 @@ export default function ProductsPage() {
                   </div>
                 )}
                 <span className="text-sm">{game.name}</span>
-                {game.featured && (
-                  <Star size={12} className="text-yellow-400" />
-                )}
-                {!game.is_active && (
-                  <XCircle size={14} className="text-red-400" />
-                )}
+              </button>
+              {/* Featured Toggle */}
+              <button
+                onClick={() => handleToggleFeatured(game)}
+                className={`p-1 rounded transition-colors ${
+                  game.featured
+                    ? 'text-yellow-400 hover:text-yellow-300'
+                    : 'text-white/30 hover:text-yellow-400 hover:bg-yellow-500/10'
+                }`}
+                title={game.featured ? 'Hapus dari populer' : 'Tambahkan ke populer'}
+              >
+                <Star size={14} fill={game.featured ? 'currentColor' : 'none'} />
               </button>
               <button
                 onClick={(e) => {
@@ -301,10 +367,14 @@ export default function ProductsPage() {
                   setEditingGame(game)
                   setShowGameModal(true)
                 }}
-                className="p-1 opacity-0 group-hover:opacity-100 text-white/40 hover:text-primary-400 transition-all"
+                className="p-1 opacity-0 group-hover:opacity-100 text-white/40 hover:text-primary-400 hover:bg-primary-500/10 rounded transition-all"
+                title="Edit game"
               >
                 <Edit size={14} />
               </button>
+              {!game.is_active && (
+                <XCircle size={14} className="text-red-400" />
+              )}
             </div>
           ))}
           {games.length === 0 && (

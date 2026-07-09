@@ -326,6 +326,27 @@ User → Vercel (Frontend) → VPS Proxy (Static IP) → Digiflazz API
 
 ## 📝 Catatan Sesi
 
+### 9 Juli 2026 - Game Populer & Featured Management
+
+#### Fitur Baru:
+
+**1. Game Populer Management**
+- Section baru "Game Populer" dengan trophy icon
+- Tampilkan game yang di-mark sebagai featured
+- Toggle bintang untuk add/remove dari populer
+- Quick toggle di setiap game card
+- Real-time update saat toggle
+
+**2. Enhanced Game Selector**
+- Visual indicator bintang untuk featured games
+- Hover effect untuk edit button
+- Badge untuk active/inactive status
+
+#### Files Updated:
+1. `src/app/admin/products/page.tsx` - Add featured games management
+
+---
+
 ### 9 Juli 2026 - Enhanced Admin Products & Whiteout Survival
 
 #### Fitur Baru:
