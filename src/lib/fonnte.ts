@@ -47,6 +47,7 @@ function formatPhoneNumber(phone: string): string {
 
 /**
  * Send WhatsApp message via Fonnte API
+ * Based on official Fonnte documentation
  */
 export async function sendWhatsApp(options: SendWhatsAppOptions): Promise<FonnteResponse> {
   const apiKey = process.env.FONNTE_API_KEY
@@ -62,23 +63,22 @@ export async function sendWhatsApp(options: SendWhatsAppOptions): Promise<Fonnte
   const formattedPhone = formatPhoneNumber(options.phone)
 
   try {
-    const payload: Record<string, string> = {
-      target: formattedPhone,
-      message: options.message,
-    }
+    // Build form data as per Fonnte documentation
+    const formData = new FormData()
+    formData.append('target', formattedPhone)
+    formData.append('message', options.message)
 
-    // Add file URL if provided
+    // Add file URL if provided (for sending images/documents)
     if (options.fileUrl) {
-      payload['url'] = options.fileUrl
+      formData.append('url', options.fileUrl)
     }
 
     const response = await fetch(FONNTE_API_URL, {
       method: 'POST',
       headers: {
-        'Authorization': apiKey,
-        'Content-Type': 'application/json',
+        'Authorization': apiKey, // Token directly, no "Bearer" prefix
       },
-      body: JSON.stringify(payload),
+      body: formData,
     })
 
     const data = await response.json()

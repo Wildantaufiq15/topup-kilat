@@ -39,7 +39,9 @@
       "WebFetch(domain:www.idcloudhost.com)",
       "WebFetch(domain:www.domainesia.com)",
       "Bash(Get-Content \"E:\\\\Website\\\\TopupKilat\\\\.env.local\")",
-      "Bash(Select-Object -Last 10)"
+      "Bash(Select-Object -Last 10)",
+      "Bash(xargs cat)",
+      "Bash(Get-Content -Path \"E:\\\\Website\\\\TopupKilat\\\\DOCUMENTATION-FONNTE.txt\" -Raw)"
     ]
   }
 }

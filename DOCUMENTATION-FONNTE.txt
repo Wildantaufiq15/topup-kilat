@@ -1,0 +1,138 @@
+<?php
+
+$curl = curl_init();
+
+curl_setopt_array($curl, array(
+  CURLOPT_URL => 'https://api.fonnte.com/typing',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => '',
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 0,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => 'POST',
+  CURLOPT_POSTFIELDS => array('target' => '08123456789','countryCode'=>'62','duration' => 10,'stop'=>false),
+  CURLOPT_HTTPHEADER => array(
+    'Authorization: TOKEN'
+  ),
+));
+
+$response = curl_exec($curl);
+
+curl_close($curl);
+echo $response;
+Available parameter
+
+target (required) (string) - number to simulate typing with
+countyCode (optional) (string) - country code of the target
+duration (required) (int) - typing duration in second
+stop (optional) (bool) - should the typing stop
+
+==================================
+
+This API is used to reschedule message that have been wrongly scheduled.
+
+<?php
+
+$curl = curl_init();
+
+curl_setopt_array($curl, array(
+CURLOPT_URL => 'https://api.fonnte.com/reset-message',
+CURLOPT_RETURNTRANSFER => true,
+CURLOPT_ENCODING => '',
+CURLOPT_MAXREDIRS => 10,
+CURLOPT_TIMEOUT => 0,
+CURLOPT_FOLLOWLOCATION => true,
+CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+CURLOPT_CUSTOMREQUEST => 'POST',
+CURLOPT_POSTFIELDS => array(
+'id' => 1, //message id
+'delay' => '5-10', //optional
+'schedule' => 1758606641, //unix timestamp
+'byschedule' => false, //optional
+),
+CURLOPT_HTTPHEADER => array(
+'Authorization: TOKEN'
+),
+));
+
+$response = curl_exec($curl);
+
+curl_close($curl);
+echo $response;
+
+TOKEN must be filled by your own token. See how to get token.
+
+Available parameter :
+
+id (int) : message id. required
+delay (string) : leave empty if you don't want to change delay. example : "5-10". optional
+schedule (int) : leave empty if you don't want to change schedule. example : 1758606641. optional
+byschedule (bool) : affect all messages that have same schedule. default false
+
+========================
+
+This API is used to delete a message via API.
+
+You can delete the requested message you don't want to proceed anymore or other reason EXCEPT message with status processing.
+
+processing message cannot be deleted.
+
+if you want to delete it, you have to disconnect your device first, the processing message will changed to pending.
+
+This way you can delete it.
+
+<?php
+
+$curl = curl_init();
+
+curl_setopt_array($curl, array(
+  CURLOPT_URL => 'https://api.fonnte.com/delete-message',
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => '',
+  CURLOPT_MAXREDIRS => 10,
+  CURLOPT_TIMEOUT => 0,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+  CURLOPT_CUSTOMREQUEST => 'POST',
+  CURLOPT_POSTFIELDS => array('id' => ''),
+  CURLOPT_HTTPHEADER => array(
+    'Authorization: TOKEN'
+  ),
+));
+
+$response = curl_exec($curl);
+
+curl_close($curl);
+echo $response;
+If you prefer to see on postman, see here.
+
+The token is device token. see how to get token.
+
+Response
+Successfull response
+
+{
+    "detail": "message 1 successfully deleted",
+    "status": true
+}
+- invalid device : invalid token
+
+{
+    "reason": "invalid token",
+    "status": false
+}
+- invalid message id : the message id does not exist or does not belong to your device.
+
+{
+    "reason": "invalid message id",
+    "status": false
+}
+- cannot delete message with status processing : the message is being processed. message cannot be deleted
+
+{
+    "reason": "cannot delete message with status processing",
+    "status": false
+}
+
+==============================
