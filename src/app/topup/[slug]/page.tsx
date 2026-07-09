@@ -187,28 +187,30 @@ export default function TopupPage() {
       <div className="relative h-48 md:h-64 overflow-hidden">
         {/* Banner Image from Database */}
         {game.banner ? (
-          <img
-            src={game.banner}
-            alt={game.name}
-            className="w-full h-full object-cover"
-          />
+          <>
+            <img
+              src={game.banner}
+              alt={game.name}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            {/* Gradient overlay only at bottom */}
+            <div className="absolute inset-0 bg-gradient-to-t from-dark-100 via-dark-100/30 to-transparent" />
+          </>
         ) : (
-          /* Default Gradient Background */
-          <div className="absolute inset-0 bg-gradient-to-r from-primary-900 to-accent-purple/50" />
+          <>
+            {/* Default Gradient Background */}
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-900 to-accent-purple/50" />
+            {/* Background Pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="w-full h-full" style={{
+                backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
+                backgroundSize: '40px 40px'
+              }} />
+            </div>
+          </>
         )}
 
-        {/* Overlay Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-dark-100 via-dark-100/50 to-transparent" />
-
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="w-full h-full" style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`,
-            backgroundSize: '40px 40px'
-          }} />
-        </div>
-
-        <div className="container-page relative h-full flex items-end pb-6">
+        <div className="container-page relative h-full flex items-end pb-6 z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -217,16 +219,16 @@ export default function TopupPage() {
             {/* Back Button */}
             <Link
               href="/games"
-              className="flex items-center gap-2 text-white/70 hover:text-white transition-colors mb-2"
+              className="flex items-center gap-2 text-white/90 hover:text-white transition-colors mb-2 backdrop-blur-sm px-2 py-1 rounded-lg"
             >
               <ArrowLeft size={20} />
               <span className="hidden sm:inline">Kembali</span>
             </Link>
 
             {/* Game Logo */}
-            <div className="relative w-20 h-20 md:w-28 md:h-28 rounded-2xl overflow-hidden border-4 border-white/20 shadow-2xl">
+            <div className="relative w-20 h-20 md:w-28 md:h-28 rounded-2xl overflow-hidden border-4 border-white/30 shadow-2xl bg-dark-100">
               <Image
-                src={game.logo || '/placeholder-game.png'}
+                src={game.logo || '/placeholder/game.svg'}
                 alt={game.name}
                 fill
                 className="object-cover"
@@ -234,12 +236,12 @@ export default function TopupPage() {
             </div>
 
             {/* Game Info */}
-            <div className="mb-1">
-              <h1 className="text-2xl md:text-4xl font-bold text-white mb-2">{game.name}</h1>
+            <div className="mb-1 flex-1">
+              <h1 className="text-2xl md:text-4xl font-bold text-white mb-2 drop-shadow-lg">{game.name}</h1>
               {game.description && (
-                <p className="text-sm text-white/60 mb-2 max-w-md">{game.description}</p>
+                <p className="text-sm text-white/80 mb-2 max-w-xl drop-shadow-md">{game.description}</p>
               )}
-              <div className="flex flex-wrap items-center gap-3 text-sm text-white/70">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-white/80">
                 <Badge variant="glow" size="sm">Aktif 24 Jam</Badge>
                 <span className="flex items-center gap-1">
                   <Clock size={14} />
