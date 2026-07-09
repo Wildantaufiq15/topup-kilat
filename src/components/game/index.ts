@@ -1,5 +1,6 @@
 export * from './GameCard'
 export * from './GameGrid'
+export * from './GameBannerCard'
 export * from './NominalGrid'
 export * from './PaymentMethodSelector'
 export * from './StepIndicator'

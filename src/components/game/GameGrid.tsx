@@ -1,6 +1,7 @@
 'use client'
 
 import { GameCard, GameCardList } from './GameCard'
+import { GameBannerCard, GameBannerCardSkeleton } from './GameBannerCard'
 import { GameCardSkeleton } from '@/components/ui/Skeleton'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -22,7 +23,7 @@ interface Game {
 interface GameGridProps {
   games: Game[]
   isLoading?: boolean
-  variant?: 'grid' | 'list'
+  variant?: 'grid' | 'list' | 'banner'
   columns?: 2 | 3 | 4 | 5 | 6 | 7 | 8
   featured?: Game[]
 }
@@ -48,7 +49,7 @@ export function GameGrid({
     return (
       <div className={cn('grid gap-3', gridColsClasses[columns])}>
         {Array.from({ length: Math.min(games?.length || 8, 12) }).map((_, i) => (
-          <GameCardSkeleton key={i} />
+          variant === 'banner' ? <GameBannerCardSkeleton key={i} /> : <GameCardSkeleton key={i} />
         ))}
       </div>
     )
@@ -73,6 +74,23 @@ export function GameGrid({
       <div className="space-y-1">
         {games.map((game) => (
           <GameCardList key={game.id} game={game} />
+        ))}
+      </div>
+    )
+  }
+
+  if (variant === 'banner') {
+    return (
+      <div className="space-y-2">
+        {games.map((game, index) => (
+          <motion.div
+            key={game.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+          >
+            <GameBannerCard game={game} featured={game.featured} />
+          </motion.div>
         ))}
       </div>
     )
