@@ -302,6 +302,7 @@ function CheckoutContent() {
         },
         body: JSON.stringify({
           orderId: order.id,
+          invoiceNo: order.invoice_no,
           method: selectedPayment,
           gameName: game?.name || 'Game',
           productName: product?.name || 'Product',
@@ -309,6 +310,8 @@ function CheckoutContent() {
           userName: profile?.name || user?.email || 'Customer',
           userEmail: profile?.email || user?.email || 'guest@topupkilat.com',
           userPhone: profile?.phone || '081234567890',
+          userGameId: userId,
+          serverId: serverId,
         }),
       })
 
