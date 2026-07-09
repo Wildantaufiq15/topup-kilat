@@ -1,8 +1,8 @@
 # 📊 Progress Report - Topup Kilat
 
-**Tanggal:** 9 Juli 2026
-**Status:** ✅ Fase 10 - Logo Game & Image Uploader
-**Versi:** 4.2.0
+**Tanggal:** 10 Juli 2026
+**Status:** ✅ Fase 11 - Banner Management System
+**Versi:** 4.3.0
 
 ---
 
@@ -10,7 +10,7 @@
 
 **Topup Kilat** adalah platform marketplace top up game yang memungkinkan pengguna membeli diamond, UC, CP, dan mata uang virtual game secara instan.
 
-**MVP Status:** Payment Gateway aktif, Admin Panel selesai, siap untuk production dengan supplier API integration!
+**MVP Status:** Payment Gateway aktif, Admin Panel selesai, siap untuk production dengan supplier API integration! Banner Management System sudah selesai!
 
 ---
 
@@ -625,4 +625,38 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
 
 *Admin Panel completed! Ready for production with supplier integration.*
 *DomaiNesia VPS selected for Digiflazz proxy (Rp 48.000/bulan)*
-*Dokumen ini diupdate pada: 9 Juli 2026*
+*Dokumen ini diupdate pada: 10 Juli 2026*
+
+---
+
+## 📝 Catatan Pending - Tanyakan ke CS Sakurupiah
+
+### ❓ Masalah Fee QRIS Tidak Sesuai Dokumentasi
+
+**Tanggal Catatan:** 10 Juli 2026
+
+**Problem:**
+Fee QRIS yang dipotong tidak sesuai dengan dokumentasi.
+
+**Data dari CSV Transaksi:**
+| Nominal | Fee Sebenarnya | Fee Dokumentasi |
+|---------|---------------|-----------------|
+| Rp 1.500 | Rp 360 (24%) | 0.7% = Rp 10.5 |
+| Rp 3.500 | Rp 374 (10.7%) | 0.7% = Rp 24.5 |
+
+**Perbandingan dengan metode lain (sesuai dokumen):**
+| Metode | Nominal | Fee CSV | Fee Dokumen | Match? |
+|--------|---------|--------|-------------|--------|
+| GOPAY | Rp 1.500 | Rp 45 (3%) | 3% | ✅ |
+| GOPAY | Rp 3.500 | Rp 105 (3%) | 3% | ✅ |
+| DANA | Rp 1.500 | Rp 45 (3%) | 3% | ✅ |
+
+**Kesimpulan:**
+- GOPAY & DANA: Fee sesuai dokumen ✅
+- QRIS: Fee TIDAK sesuai dokumen ❌
+- Ada biaya tambahan ~Rp 350 per transaksi QRIS yang tidak ada di dokumentasi
+
+**Pertanyaan untuk CS Sakurupiah:**
+> "Mengapa fee QRIS yang saya terima tidak sesuai dokumentasi? Transaksi Rp 1.500 dipotong Rp 360 (24%), padahal fee seharusnya 0.7%. Apakah ada biaya tambahan seperti fee settlement atau minimum fee?"
+
+**Status:** ⏳ TUNGGU RESPON CS SAKURUPIAH
