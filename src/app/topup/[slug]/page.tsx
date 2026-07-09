@@ -184,7 +184,22 @@ export default function TopupPage() {
   return (
     <div className="min-h-screen">
       {/* Header Banner */}
-      <div className="relative h-48 md:h-64 bg-gradient-to-r from-primary-900 to-accent-purple/50">
+      <div className="relative h-48 md:h-64 overflow-hidden">
+        {/* Banner Image from Database */}
+        {game.banner ? (
+          <img
+            src={game.banner}
+            alt={game.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          /* Default Gradient Background */
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-900 to-accent-purple/50" />
+        )}
+
+        {/* Overlay Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-dark-100 via-dark-100/50 to-transparent" />
+
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
           <div className="w-full h-full" style={{
@@ -221,6 +236,9 @@ export default function TopupPage() {
             {/* Game Info */}
             <div className="mb-1">
               <h1 className="text-2xl md:text-4xl font-bold text-white mb-2">{game.name}</h1>
+              {game.description && (
+                <p className="text-sm text-white/60 mb-2 max-w-md">{game.description}</p>
+              )}
               <div className="flex flex-wrap items-center gap-3 text-sm text-white/70">
                 <Badge variant="glow" size="sm">Aktif 24 Jam</Badge>
                 <span className="flex items-center gap-1">
