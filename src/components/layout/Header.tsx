@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
-import { Menu, X, ShoppingCart, User, Zap, LogOut, ChevronDown } from 'lucide-react'
+import { Menu, X, ShoppingCart, User, LogOut, ChevronDown } from 'lucide-react'
 
 const navLinks = [
   { href: '/', label: 'Beranda' },
@@ -68,9 +69,13 @@ export function Header() {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary-600 to-accent-purple flex items-center justify-center shadow-lg shadow-primary-500/25 group-hover:shadow-primary-500/40 transition-shadow">
-              <Zap className="w-6 h-6 text-white" />
-            </div>
+            <Image
+              src="/logo-topup-kilat.png"
+              alt="Topup Kilat"
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-xl object-contain"
+            />
             <div className="hidden sm:block">
               <span className="font-bold text-xl text-white group-hover:text-primary-400 transition-colors">
                 Topup<span className="text-gradient bg-clip-text text-transparent bg-gradient-to-r from-accent-cyan to-primary-400">Kilat</span>

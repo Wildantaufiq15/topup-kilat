@@ -2,13 +2,14 @@
 
 import { Suspense, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
 import { isValidEmail, isValidPhone } from '@/lib/utils'
-import { Zap, Mail, Phone, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react'
+import { Mail, Phone, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react'
 
 function ForgotPasswordForm() {
   const router = useRouter()
@@ -151,9 +152,13 @@ function ForgotPasswordForm() {
       {/* Logo */}
       <div className="text-center mb-8">
         <Link href="/" className="inline-flex items-center gap-2">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-600 to-accent-purple flex items-center justify-center shadow-lg">
-            <Zap className="w-7 h-7 text-white" />
-          </div>
+          <Image
+            src="/logo-topup-kilat.png"
+            alt="Topup Kilat"
+            width={48}
+            height={48}
+            className="w-12 h-12 rounded-xl object-contain"
+          />
           <span className="font-bold text-2xl text-white">
             Topup<span className="text-gradient bg-clip-text text-transparent bg-gradient-to-r from-accent-cyan to-primary-400">Kilat</span>
           </span>
