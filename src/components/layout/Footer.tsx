@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { Zap, Mail, Phone, MapPin, Instagram, Twitter, Youtube } from 'lucide-react'
+import Image from 'next/image'
+import { Mail, Phone, MapPin, Instagram, Twitter, Youtube } from 'lucide-react'
 
 const footerLinks = {
   produk: [
@@ -35,13 +36,14 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-primary-600 to-accent-purple flex items-center justify-center shadow-lg">
-                <Zap className="w-6 h-6 text-white" />
-              </div>
-              <span className="font-bold text-xl text-white">
-                Topup<span className="text-gradient bg-clip-text text-transparent bg-gradient-to-r from-accent-cyan to-primary-400">Kilat</span>
-              </span>
+            <Link href="/" className="inline-block mb-4">
+              <Image
+                src="/logo-topup-kilat.png"
+                alt="Topup Kilat"
+                width={48}
+                height={48}
+                className="w-12 h-12 rounded-xl object-contain"
+              />
             </Link>
             <p className="text-white/60 text-sm mb-6 max-w-xs">
               Platform top up game terpercaya di Indonesia. Proses cepat, harga termurah, dan keamanan terjamin.
