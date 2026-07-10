@@ -15,7 +15,7 @@ async function checkRLSStatus() {
   console.log('🔍 Checking RLS Migration Status...\n')
   console.log('='.repeat(50))
 
-  const adminClient = createClient(supabaseUrl, serviceKey)
+  const adminClient = createClient(supabaseUrl!, serviceKey!)
 
   try {
     // ====================================================
@@ -67,7 +67,7 @@ async function checkRLSStatus() {
     console.log('\n📌 CHECK 2: Public Read Access (Anon Key)')
     console.log('-'.repeat(50))
 
-    const anonClient = createClient(supabaseUrl, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
+    const anonClient = createClient(supabaseUrl!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
     // Test games read
     const { data: games, error: gamesError } = await anonClient

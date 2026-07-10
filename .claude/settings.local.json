@@ -44,7 +44,10 @@
       "Bash(Get-Content -Path \"E:\\\\Website\\\\TopupKilat\\\\DOCUMENTATION-FONNTE.txt\" -Raw)",
       "Bash(grep -r \"aspect-video\" tailwind.config.ts)",
       "Bash(grep -r \"aspect\" tailwind.config.ts)",
-      "Bash(npx -y supabase-js-cli psql --project-id tzykgukfnmgjwvaebtnc -c \"SELECT id, name, price, is_active, game_id FROM public.game_products LIMIT 10;\")"
+      "Bash(npx -y supabase-js-cli psql --project-id tzykgukfnmgjwvaebtnc -c \"SELECT id, name, price, is_active, game_id FROM public.game_products LIMIT 10;\")",
+      "Bash(sed -i 's/createClient\\(supabaseUrl, anonKey\\)/createClient\\(supabaseUrl!, anonKey!\\)/g' scripts/test-rls-security.ts)",
+      "Bash(sed -i 's/createClient\\(supabaseUrl, serviceKey\\)/createClient\\(supabaseUrl!, serviceKey!\\)/g' scripts/test-rls-security.ts)",
+      "Bash(npx tsc *)"
     ]
   }
 }

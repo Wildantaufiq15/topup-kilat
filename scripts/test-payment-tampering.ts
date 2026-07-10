@@ -47,7 +47,7 @@ async function testPaymentTampering() {
   console.log('📌 SETUP: Getting test order...')
   console.log('-'.repeat(50))
 
-  const adminClient = createClient(SUPABASE_URL, SERVICE_KEY)
+  const adminClient = createClient(SUPABASE_URL!, SERVICE_KEY!)
 
   // Find a pending order with a product
   const { data: testOrder } = await adminClient

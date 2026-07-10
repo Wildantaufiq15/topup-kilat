@@ -70,7 +70,6 @@ export async function POST(request: NextRequest) {
     // If signature is missing or invalid, reject immediately without processing
     if (!signature) {
       console.error(`[${requestId}] ❌ Signature missing - rejecting callback`)
-      console.error(`[${requestId}] IP: ${request.ip}`)
       console.error(`[${requestId}] This could be an attack attempt - logging for audit`)
 
       return NextResponse.json(
@@ -81,7 +80,6 @@ export async function POST(request: NextRequest) {
 
     if (!verifyCallbackSignature(rawBody, signature)) {
       console.error(`[${requestId}] ❌ Invalid signature - rejecting callback`)
-      console.error(`[${requestId}] IP: ${request.ip}`)
       console.error(`[${requestId}] Received signature: ${signature.substring(0, 20)}...`)
       console.error(`[${requestId}] This could be an attack attempt - logging for audit`)
 

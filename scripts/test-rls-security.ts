@@ -48,8 +48,8 @@ async function runTests() {
   const results: TestResult[] = []
 
   // Create clients
-  const anonClient = createClient(supabaseUrl, anonKey)
-  const serviceClient = createClient(supabaseUrl, serviceKey)
+  const anonClient = createClient(supabaseUrl!, anonKey!)
+  const serviceClient = createClient(supabaseUrl!, serviceKey!)
 
   try {
     // Get test data

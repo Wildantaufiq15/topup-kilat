@@ -168,7 +168,7 @@ async function testCallbackSecurity() {
   console.log('\n📌 TEST 4: No Database Changes for Invalid Requests')
   console.log('-'.repeat(50))
 
-  const adminClient = createClient(SUPABASE_URL, SERVICE_KEY)
+  const adminClient = createClient(SUPABASE_URL!, SERVICE_KEY!)
 
   // Get current payment status
   const { data: beforePayment } = await adminClient
