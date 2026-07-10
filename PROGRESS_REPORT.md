@@ -1,8 +1,8 @@
 # 📊 Progress Report - Topup Kilat
 
 **Tanggal:** 10 Juli 2026
-**Status:** ✅ Fase 13 - Security Hardening Complete
-**Versi:** 4.5.0
+**Status:** 🔄 Fase 14 - RLS Testing & Bug Fixing
+**Versi:** 4.5.1
 
 ---
 
@@ -10,7 +10,7 @@
 
 **Topup Kilat** adalah platform marketplace top up game yang memungkinkan pengguna membeli diamond, UC, CP, dan mata uang virtual game secara instan.
 
-**MVP Status:** Payment Gateway aktif, Admin Panel selesai, **RLS Security aktif!** **Webhook Security aktif!** **Payment Tampering Prevention aktif!**
+**MVP Status:** Payment Gateway aktif, Admin Panel selesai, **Security Hardening Complete!** **Sedang Testing RLS impact!**
 
 ---
 
@@ -834,3 +834,106 @@ Fee QRIS yang dipotong tidak sesuai dengan dokumentasi.
 - [x] `test-payment-tampering.ts` - Verify price cannot be manipulated
 - [x] `fix-rls-grants.sql` - Fix anon grants
 - [x] `verify-rls-migration.sql` - Verify migration
+
+---
+
+## 📝 Catatan 10 Juli 2026 - Deployment & Testing
+
+### Build Error Fix
+
+**Problem:**
+```
+./scripts/test-callback-security.ts:171:36
+Type error: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+```
+
+**Solution:**
+1. Fix TypeScript errors di test scripts dengan menambahkan `!` non-null assertion
+2. Remove `request.ip` yang tidak ada di NextRequest type
+3. Re-run build berhasil
+
+### Security Test Results
+
+**✅ test-callback-security.ts - ALL PASS:**
+```
+✅ TEST 1: Missing Signature - 401 PASS
+✅ TEST 2: Invalid Signature - 401 PASS
+```
+
+**✅ test-payment-tampering.ts - ALL PASS:**
+```
+✅ TEST 1: Setup - Order found with total Rp 1.500
+✅ TEST 2: Manipulated Amount - Server reject (below minimum)
+✅ TEST 3: Tampered Order Total - Server REJECTED mismatch!
+✅ TEST 4: Double Payment Prevention - Active
+✅ TEST 5: Amount Not From Client - API only accepts orderId
+```
+
+### Database Status
+
+| Data | Status |
+|------|--------|
+| Games | ✅ 6 active games |
+| Products | ✅ 6 products (Mobile Legends) |
+| Orders | ✅ Orders exist |
+| Payments | ✅ Payment records exist |
+
+### Next: Full Flow Testing
+
+**待测试 (To be tested):**
+1. Public pages (homepage, games, products)
+2. Auth flow (register, login, forgot password)
+3. Checkout flow (create order, create payment)
+4. User dashboard (order history)
+5. Admin panel (all CRUD operations)
+
+**Kemungkinan issue:**
+- "Permission denied" - RLS policy kurang
+- Data tidak muncul - policy terlalu strict
+- Insert/update gagal - no INSERT/UPDATE policy
+
+---
+
+### Build Error Fix (2nd commit)
+
+**Tanggal:** 10 Juli 2026
+
+**Files Fixed:**
+- `scripts/test-callback-security.ts` - createClient type assertion
+- `scripts/test-payment-tampering.ts` - createClient type assertion
+- `scripts/test-rls-security.ts` - createClient type assertion
+- `scripts/check-rls-status.ts` - createClient type assertion
+- `src/app/api/callback/sakurupiah/route.ts` - remove request.ip
+
+
+---
+
+## Pending: Full Flow Testing
+
+**待测试 (Tomorrow):**
+1. ✅ Public pages - Homepage, game detail, products
+2. ⏳ Auth flow - Register, login, forgot password
+3. ⏳ Checkout flow - Create order, create payment
+4. ⏳ User dashboard - Order history, profile
+5. ⏳ Admin panel - All CRUD operations
+
+**Jika ada error 'Permission denied':**
+- Check RLS policy untuk tabel tersebut
+- Mungkin perlu INSERT/UPDATE policy tambahan
+- Bisa jadi auth.uid() tidak match dengan user_id
+
+**Scripts untuk debugging:**
+```bash
+# Check RLS status
+npx tsx scripts/check-rls-status.ts
+
+# Verify RLS migration
+# Run scripts/verify-rls-migration.sql di Supabase SQL Editor
+
+# Check database data
+npx tsx scripts/check-database.ts
+```
+
+---
+
+*Dokumen ini diupdate pada: 10 Juli 2026*
