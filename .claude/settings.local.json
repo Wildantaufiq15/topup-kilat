@@ -43,7 +43,8 @@
       "Bash(xargs cat)",
       "Bash(Get-Content -Path \"E:\\\\Website\\\\TopupKilat\\\\DOCUMENTATION-FONNTE.txt\" -Raw)",
       "Bash(grep -r \"aspect-video\" tailwind.config.ts)",
-      "Bash(grep -r \"aspect\" tailwind.config.ts)"
+      "Bash(grep -r \"aspect\" tailwind.config.ts)",
+      "Bash(npx -y supabase-js-cli psql --project-id tzykgukfnmgjwvaebtnc -c \"SELECT id, name, price, is_active, game_id FROM public.game_products LIMIT 10;\")"
     ]
   }
 }

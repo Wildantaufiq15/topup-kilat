@@ -295,6 +295,8 @@ function CheckoutContent() {
       console.log('Order created:', order)
 
       // 2. Create payment via API route (server-side)
+      // SECURITY: We only send orderId - server fetches actual price from database
+      // DO NOT send amount from client - it will be ignored and calculated server-side
       const response = await fetch('/api/payments/create', {
         method: 'POST',
         headers: {
@@ -304,9 +306,6 @@ function CheckoutContent() {
           orderId: order.id,
           invoiceNo: order.invoice_no,
           method: selectedPayment,
-          gameName: game?.name || 'Game',
-          productName: product?.name || 'Product',
-          amount: product.price,
           userName: profile?.name || user?.email || 'Customer',
           userEmail: profile?.email || user?.email || 'guest@topupkilat.com',
           userPhone: profile?.phone || '081234567890',

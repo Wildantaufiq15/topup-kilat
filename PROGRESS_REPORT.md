@@ -1,8 +1,8 @@
 # 📊 Progress Report - Topup Kilat
 
 **Tanggal:** 10 Juli 2026
-**Status:** ✅ Fase 11 - Banner Management System
-**Versi:** 4.3.0
+**Status:** ✅ Fase 13 - Security Hardening Complete
+**Versi:** 4.5.0
 
 ---
 
@@ -10,7 +10,7 @@
 
 **Topup Kilat** adalah platform marketplace top up game yang memungkinkan pengguna membeli diamond, UC, CP, dan mata uang virtual game secara instan.
 
-**MVP Status:** Payment Gateway aktif, Admin Panel selesai, siap untuk production dengan supplier API integration! Banner Management System sudah selesai!
+**MVP Status:** Payment Gateway aktif, Admin Panel selesai, **RLS Security aktif!** **Webhook Security aktif!** **Payment Tampering Prevention aktif!**
 
 ---
 
@@ -315,7 +315,7 @@ User → Vercel (Frontend) → VPS Proxy (Static IP) → Digiflazz API
 - Supabase (PostgreSQL + Auth)
 
 ### Payment Gateway
-- Sakurupiah (Sandbox mode)
+- Sakurupiah (production mode)
 
 ### Deployment
 - Frontend: Vercel ✅
@@ -629,6 +629,149 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
 
 ---
 
+## ✅ fase 12 - RLS Security (COMPLETE)
+
+### File Migration Baru:
+| File | Deskripsi |
+|------|-------------|
+| `supabase/migrations/001_enable_rls.sql` | Enable RLS dengan least privilege policies |
+
+### RLS Policies Yang Dibuat:
+
+| Table | Public Read | Authenticated | Admin Only |
+|-------|-------------|---------------|------------|
+| `users` | ❌ | Own profile only | Full access |
+| `games` | ✅ Active only | ✅ Active only | Full access |
+| `game_products` | ✅ Active only | ✅ Active only | Full access |
+| `orders` | ❌ | Own orders only | Full access |
+| `payments` | ❌ | Own payments only | Full access |
+| `vouchers` | ✅ Active only | ✅ Active only | Full access |
+| `promos` | ✅ Active only | ✅ Active only | Full access |
+| `wishlists` | ❌ | Own wishlists | Full access |
+| `points_ledger` | ❌ | Own transactions | Full access |
+| `notifications` | ❌ | Own notifications | Full access |
+| `supplier_requests` | ❌ | ❌ | ✅ Full access |
+
+### Security Features:
+- Security definer function `auth.is_admin()` untuk cek role admin (avoid recursion)
+- No UPDATE/DELETE policy untuk orders/payments dari client (harus via service_role)
+- GRANT SELECT hanya untuk tabel publik (games, game_products, promos, vouchers)
+- Revoked ALL grants dari anon role
+
+### Files Created:
+1. `supabase/migrations/001_enable_rls.sql` - RLS migration (NEW)
+2. `scripts/test-rls-security.ts` - RLS test script (NEW)
+3. `src/lib/supabase-admin.ts` - Admin client helper (NEW)
+4. `README.md` - Updated dengan RLS documentation (UPDATED)
+
+---
+
+## ✅ fase 13 - Webhook & Payment Security (COMPLETE)
+
+### Tanggal: 10 Juli 2026
+
+### Problem:
+1. Webhook Sakurupiah TIDAK verify signature (komentar "continue anyway")
+2. Payment endpoint terima `amount` dari client - bisa dimanipulasi
+
+### Solusi yang Diimplementasikan:
+
+#### 1. Webhook Signature Verification (MANDATORY)
+
+**File:** `src/app/api/callback/sakurupiah/route.ts`
+
+```typescript
+// SEBELUM (RENTAN):
+if (signature && process.env.SAKURUPIAH_API_KEY) {
+  if (signature !== expectedSignature) {
+    console.error('Invalid signature!')
+    // Continue anyway - signature might be optional ❌
+  }
+}
+
+// SESUDAH (SEAMAN):
+if (!signature) {
+  return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
+}
+if (!verifyCallbackSignature(rawBody, signature)) {
+  return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+}
+// ✅ Continue only if valid
+```
+
+**Enhancements:**
+- Signature verification MANDATORY (reject 401 jika invalid)
+- Import `verifyCallbackSignature` dari `src/lib/sakurupiah.ts`
+- Timing-safe comparison untuk prevent timing attacks
+- Logging untuk audit trail
+
+#### 2. Payment Tampering Prevention
+
+**File:** `src/app/api/payments/create/route.ts`
+
+```typescript
+// SEBELUM (RENTAN):
+POST /api/payments/create
+{
+  "orderId": "xxx",
+  "amount": 1000,  // ❌ Client bisa manipulasi!
+  "method": "QRIS"
+}
+
+// SESUDAH (SEAMAN):
+POST /api/payments/create
+{
+  "orderId": "xxx",
+  "method": "QRIS"
+  // amount DIHAPUS dari interface
+}
+```
+
+**Security Flow:**
+1. Client hanya kirim `orderId` - tidak ada `amount`
+2. Server fetch order dari database
+3. Server hitung ulang: `product.price - voucher_discount`
+4. Bandingkan dengan `orders.total` - reject jika mismatch
+5. Check double payment prevention
+6. Gunakan server-calculated amount untuk Sakurupiah
+
+### Business Rules Diimplementasikan:
+- Minimum transaksi: Rp 10.000
+- Maximum transaksi: Rp 50.000.000
+- Double payment prevention: reject jika sudah ada PAID/PENDING payment
+
+### Files Updated:
+1. `src/app/api/callback/sakurupiah/route.ts` - Mandatory signature verification
+2. `src/lib/sakurupiah.ts` - Enhanced `verifyCallbackSignature` dengan timing-safe
+3. `src/app/api/payments/create/route.ts` - Server-side price calculation
+4. `src/app/checkout/page.tsx` - Removed `amount` dari request body
+
+### Files Created:
+1. `scripts/test-callback-security.ts` - Test webhook signature verification (NEW)
+2. `scripts/test-payment-tampering.ts` - Test payment integrity (NEW)
+3. `scripts/fix-rls-grants.sql` - Fix anon grants yang bermasalah (NEW)
+4. `scripts/verify-rls-migration.sql` - Verifikasi RLS migration (NEW)
+
+### Security Test Scripts:
+
+```bash
+# Test RLS security
+npx tsx scripts/test-rls-security.ts
+
+# Test webhook signature
+npx tsx scripts/test-callback-security.ts
+
+# Test payment tampering prevention
+npx tsx scripts/test-payment-tampering.ts
+```
+
+### Documentation Updated:
+- `README.md` - Added Payment Integrity section
+- `README.md` - Added Webhook Security section
+- `README.md` - Added Security Best Practices
+
+---
+
 ## 📝 Catatan Pending - Tanyakan ke CS Sakurupiah
 
 ### ❓ Masalah Fee QRIS Tidak Sesuai Dokumentasi
@@ -660,3 +803,34 @@ Fee QRIS yang dipotong tidak sesuai dengan dokumentasi.
 > "Mengapa fee QRIS yang saya terima tidak sesuai dokumentasi? Transaksi Rp 1.500 dipotong Rp 360 (24%), padahal fee seharusnya 0.7%. Apakah ada biaya tambahan seperti fee settlement atau minimum fee?"
 
 **Status:** ⏳ TUNGGU RESPON CS SAKURUPIAH
+
+---
+
+## ✅ Security Checklist
+
+### RLS Security ✅
+- [x] Enable RLS on all tables
+- [x] Create least privilege policies
+- [x] Revoke ALL from anon, grant SELECT only for public tables
+- [x] is_admin() function for admin checks
+- [x] No UPDATE/DELETE on orders/payments from client
+
+### Webhook Security ✅
+- [x] Mandatory signature verification
+- [x] Reject 401 if signature missing/invalid
+- [x] Timing-safe comparison
+- [x] Audit logging for failed attempts
+
+### Payment Integrity ✅
+- [x] Server-side price calculation
+- [x] No amount accepted from client
+- [x] Order total validation
+- [x] Double payment prevention
+- [x] Transaction limits (min/max)
+
+### Security Tests ✅
+- [x] `test-rls-security.ts` - Verify RLS policies
+- [x] `test-callback-security.ts` - Verify webhook signature
+- [x] `test-payment-tampering.ts` - Verify price cannot be manipulated
+- [x] `fix-rls-grants.sql` - Fix anon grants
+- [x] `verify-rls-migration.sql` - Verify migration

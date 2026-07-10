@@ -3,6 +3,8 @@
  * Documentation: https://sakurupiah.id/developers/api-dokumentasi
  */
 
+const crypto = require('crypto')
+
 const API_URL = process.env.SAKURUPIAH_API_URL || 'https://sakurupiah.id/api'
 const API_ID = process.env.SAKURUPIAH_API_ID || ''
 const API_KEY = process.env.SAKURUPIAH_API_KEY || ''
@@ -275,17 +277,39 @@ export async function checkTransactionStatus(
 
 /**
  * Verify callback signature from Sakurupiah
+ * Uses HMAC-SHA256 with the raw request body and API key
+ *
+ * @param rawBody - The raw JSON string body from the callback request
+ * @param signature - The signature from x-callback-signature header
+ * @returns true if signature is valid, false otherwise
  */
 export function verifyCallbackSignature(
-  payload: string,
+  rawBody: string,
   signature: string
 ): boolean {
+  if (!rawBody || !signature) {
+    return false
+  }
+
+  if (!API_KEY) {
+    console.error('SAKURUPIAH_API_KEY is not configured - cannot verify signature')
+    return false
+  }
+
   const expectedSignature = require('crypto')
     .createHmac('sha256', API_KEY)
-    .update(payload)
+    .update(rawBody)
     .digest('hex')
 
-  return signature === expectedSignature
+  // Use timing-safe comparison to prevent timing attacks
+  const sigBuffer = Buffer.from(signature, 'utf8')
+  const expectedBuffer = Buffer.from(expectedSignature, 'utf8')
+
+  if (sigBuffer.length !== expectedBuffer.length) {
+    return false
+  }
+
+  return crypto.timingSafeEqual(sigBuffer, expectedBuffer)
 }
 
 // Payment method codes supported

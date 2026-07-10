@@ -60,29 +60,30 @@ export class PaymentsService {
   }
 
   async handleWebhook(payload: any, signature: string) {
-    // Verify signature
+    // Verify signature FIRST - reject immediately if invalid
     const isValid = this.verifySignature(payload, signature);
 
-    // Find payment first by order ID
-    const payment = await this.prisma.payment.findUnique({
-      where: { orderId: payload.order_id },
-      include: { order: true },
-    });
-
-    // Log webhook with payment ID if found, otherwise use order_id as placeholder
+    // Log webhook attempt (after verification to track both valid and invalid attempts)
     await this.prisma.paymentWebhookLog.create({
       data: {
-        paymentId: payment?.id || payload.order_id,
+        paymentId: payload.order_id,
         payload,
-        signature,
+        signature: signature || 'MISSING',
         isValid,
         processedAt: new Date(),
       },
     });
 
+    // REJECT if signature is invalid - do NOT process anything
     if (!isValid) {
       throw new Error('Invalid webhook signature');
     }
+
+    // Only look up payment after signature is verified
+    const payment = await this.prisma.payment.findUnique({
+      where: { orderId: payload.order_id },
+      include: { order: true },
+    });
 
     if (!payment) {
       throw new Error('Payment not found');

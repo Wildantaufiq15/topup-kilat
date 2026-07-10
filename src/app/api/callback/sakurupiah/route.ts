@@ -1,3 +1,16 @@
+/**
+ * Sakurupiah Payment Gateway Callback Handler
+ *
+ * SECURITY: This endpoint processes payment status updates from Sakurupiah.
+ * All requests MUST have valid x-callback-signature header (HMAC-SHA256).
+ * Requests with missing or invalid signatures are REJECTED with 401.
+ *
+ * This is critical to prevent fake payment notifications that could:
+ * - Mark unpaid orders as PAID
+ * - Bypass payment verification
+ * - Cause financial loss
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import {
@@ -6,6 +19,7 @@ import {
   notifyAdminPaymentExpired,
   notifyCustomerOrderSuccess,
 } from '@/lib/fonnte'
+import { verifyCallbackSignature } from '@/lib/sakurupiah'
 
 // Initialize Supabase admin client (server-side)
 const supabaseAdmin = createClient(
@@ -52,19 +66,32 @@ export async function POST(request: NextRequest) {
 
     console.log(`[${requestId}] Parsed data:`, { trx_id, merchant_ref, status })
 
-    // Verify signature (optional in production, but recommended)
-    if (signature && process.env.SAKURUPIAH_API_KEY) {
-      const crypto = await import('crypto')
-      const expectedSignature = crypto
-        .createHmac('sha256', process.env.SAKURUPIAH_API_KEY)
-        .update(rawBody)
-        .digest('hex')
+    // Verify signature - MANDATORY for security
+    // If signature is missing or invalid, reject immediately without processing
+    if (!signature) {
+      console.error(`[${requestId}] ❌ Signature missing - rejecting callback`)
+      console.error(`[${requestId}] IP: ${request.ip}`)
+      console.error(`[${requestId}] This could be an attack attempt - logging for audit`)
 
-      if (signature !== expectedSignature) {
-        console.error('Invalid signature!')
-        // Continue anyway for now - signature might be optional
-      }
+      return NextResponse.json(
+        { success: false, message: 'Missing signature' },
+        { status: 401 }
+      )
     }
+
+    if (!verifyCallbackSignature(rawBody, signature)) {
+      console.error(`[${requestId}] ❌ Invalid signature - rejecting callback`)
+      console.error(`[${requestId}] IP: ${request.ip}`)
+      console.error(`[${requestId}] Received signature: ${signature.substring(0, 20)}...`)
+      console.error(`[${requestId}] This could be an attack attempt - logging for audit`)
+
+      return NextResponse.json(
+        { success: false, message: 'Invalid signature' },
+        { status: 401 }
+      )
+    }
+
+    console.log(`[${requestId}] ✅ Signature verified successfully`)
 
     // Only process payment_status events
     if (callbackEvent !== 'payment_status' && callbackEvent !== '') {
