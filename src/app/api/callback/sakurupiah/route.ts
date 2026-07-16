@@ -52,7 +52,13 @@ interface OrderData {
   invoice_no: string
   user_game_id: string
   server_id: string | null
+  fulfillment_status?: string | null
+  fulfillment_ref?: string | null
+  fulfillment_rc?: string | null
+  fulfillment_message?: string | null
+  fulfillment_sn?: string | null
   product: {
+    id: string
     name: string
   }
   game: {
