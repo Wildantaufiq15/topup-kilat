@@ -10,19 +10,33 @@
  * NEVER import this in client-side code (components, pages, etc.)
  */
 
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-// Create admin client with service role key
-export const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
+// Lazy initialization to avoid build-time errors
+let supabaseAdminInstance: SupabaseClient | null = null
+
+function getSupabaseAdmin(): SupabaseClient {
+  if (!supabaseAdminInstance) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error(
+        'Missing Supabase environment variables. ' +
+        'Please ensure NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set.'
+      )
+    }
+
+    supabaseAdminInstance = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
   }
-)
+
+  return supabaseAdminInstance
+}
 
 /**
  * Example usage in API routes:
@@ -31,9 +45,14 @@ export const supabaseAdmin = createClient(
  * import { supabaseAdmin } from '@/lib/supabase-admin'
  *
  * // This bypasses RLS and can update any row
- * const { data, error } = await supabaseAdmin
+ * const { data, error } = await supabaseAdmin()
  *   .from('orders')
  *   .update({ status: 'PAID' })
  *   .eq('id', orderId)
  * ```
  */
+export const supabaseAdmin = {
+  from: (table: string) => getSupabaseAdmin().from(table),
+  rpc: (fn: string, params?: any) => getSupabaseAdmin().rpc(fn, params),
+  auth: getSupabaseAdmin().auth,
+}
