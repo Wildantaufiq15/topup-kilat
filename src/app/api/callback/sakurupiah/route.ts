@@ -433,7 +433,7 @@ export async function POST(request: NextRequest) {
         try {
           const fulfillmentResult = await processFulfillment(
             orderData,
-            paymentId,
+            paymentId!,  // paymentId is guaranteed to be set here
             requestId
           )
           console.log(`[${requestId}] ✅ Fulfillment result:`, fulfillmentResult)
