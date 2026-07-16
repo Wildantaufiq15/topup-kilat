@@ -131,7 +131,7 @@ export async function checkBalance(): Promise<DigiflazzBalance> {
   })
 
   if (response.data?.deposit === undefined) {
-    throw new Error(response.data?.message || 'Failed to check balance')
+    throw new Error(response.message || 'Failed to check balance')
   }
 
   return response.data
@@ -162,7 +162,7 @@ export async function getPriceList(params?: {
   const response = await digiflazzRequest<DigiflazzProduct[]>('/', payload)
 
   if (!response.data) {
-    throw new Error(response.data?.message || 'Failed to get price list')
+    throw new Error(response.message || 'Failed to get price list')
   }
 
   return response.data
@@ -181,7 +181,7 @@ export async function getPostpaidPriceList(): Promise<DigiflazzProduct[]> {
   })
 
   if (!response.data) {
-    throw new Error(response.data?.message || 'Failed to get postpaid price list')
+    throw new Error(response.message || 'Failed to get postpaid price list')
   }
 
   return response.data
@@ -210,7 +210,7 @@ export async function createTopup(params: {
   })
 
   if (!response.data) {
-    throw new Error(response.data?.message || 'Failed to create topup')
+    throw new Error(response.message || 'Failed to create topup')
   }
 
   return response.data
@@ -232,7 +232,7 @@ export async function checkTopupStatus(refId: string): Promise<DigiflazzTopupRes
   })
 
   if (!response.data) {
-    throw new Error(response.data?.message || 'Failed to check topup status')
+    throw new Error(response.message || 'Failed to check topup status')
   }
 
   return response.data
