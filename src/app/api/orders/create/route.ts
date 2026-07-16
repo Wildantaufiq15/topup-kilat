@@ -11,7 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase-admin'
+import { supabaseAdminAdmin } from '@/lib/supabaseAdmin-admin'
 
 interface CreateOrderRequest {
   gameSlug: string
@@ -63,7 +63,7 @@ async function validateVoucher(
   subtotal: number
 ): Promise<ValidatedVoucher | null> {
   // Fetch voucher from database
-  const { data: voucher, error } = await supabaseAdmin
+  const { data: voucher, error } = await supabaseAdminAdmin
     .from('vouchers')
     .select('*')
     .eq('code', voucherCode.toUpperCase())
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
     // =====================================================
     // STEP 2: Fetch game from database
     // =====================================================
-    const { data: game, error: gameError } = await supabase
+    const { data: game, error: gameError } = await supabaseAdmin
       .from('games')
       .select('id, name, slug')
       .eq('slug', gameSlug)
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
     // =====================================================
     // STEP 3: Fetch product from database (SERVER-SIDE)
     // =====================================================
-    const { data: product, error: productError } = await supabase
+    const { data: product, error: productError } = await supabaseAdmin
       .from('game_products')
       .select('id, name, price, game_id')
       .eq('id', productId)
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
 
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.slice(7)
-      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
+      const { data: { user }, error: authError } = await supabaseAdminAdmin.auth.getUser(token)
 
       if (!authError && user) {
         userId = user.id
@@ -241,7 +241,7 @@ export async function POST(request: NextRequest) {
     // =====================================================
     const orderId = crypto.randomUUID()
 
-    const { data: order, error: orderError } = await supabase
+    const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
       .insert({
         id: orderId,
@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
     // STEP 8: Increment voucher usage if applied
     // =====================================================
     if (voucherId) {
-      const { error: updateError } = await supabaseAdmin.rpc('increment_voucher_usage', {
+      const { error: updateError } = await supabaseAdminAdmin.rpc('increment_voucher_usage', {
         voucher_id: voucherId,
       })
 
