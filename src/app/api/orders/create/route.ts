@@ -11,13 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-
-// Server-side Supabase client with service role key
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 interface CreateOrderRequest {
   gameSlug: string
@@ -191,7 +185,7 @@ export async function POST(request: NextRequest) {
 
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.slice(7)
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
 
       if (!authError && user) {
         userId = user.id
