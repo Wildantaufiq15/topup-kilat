@@ -63,7 +63,7 @@ async function validateVoucher(
   subtotal: number
 ): Promise<ValidatedVoucher | null> {
   // Fetch voucher from database
-  const { data: voucher, error } = await supabase
+  const { data: voucher, error } = await supabaseAdmin
     .from('vouchers')
     .select('*')
     .eq('code', voucherCode.toUpperCase())
@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
     // STEP 8: Increment voucher usage if applied
     // =====================================================
     if (voucherId) {
-      const { error: updateError } = await supabase.rpc('increment_voucher_usage', {
+      const { error: updateError } = await supabaseAdmin.rpc('increment_voucher_usage', {
         voucher_id: voucherId,
       })
 
