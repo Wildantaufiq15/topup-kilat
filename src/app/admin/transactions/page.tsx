@@ -16,7 +16,6 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { supabase } from '@/lib/supabase'
 
 interface Order {
   id: string
@@ -50,19 +49,11 @@ export default function TransactionsPage() {
   const fetchOrders = async () => {
     setIsLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          game:games(name),
-          product:game_products(name, price),
-          user:users(name, email)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(500)
+      const response = await fetch('/api/admin/orders')
+      const result = await response.json()
 
-      if (error) throw error
-      setOrders(data || [])
+      if (!result.success) throw new Error(result.message)
+      setOrders(result.data || [])
     } catch (error) {
       console.error('Error fetching orders:', error)
     } finally {

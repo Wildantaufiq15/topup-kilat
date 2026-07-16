@@ -70,11 +70,21 @@ export default function AdminBannersPage() {
   const fetchBanners = async () => {
     setIsLoading(true)
     try {
-      const data = await api.getAllBanners()
-      setBanners(data || [])
+      // Use admin API route
+      const response = await fetch('/api/admin/promos')
+      const result = await response.json()
+
+      if (!result.success) throw new Error(result.message)
+      setBanners(result.data || [])
     } catch (err: any) {
       console.error('Error fetching banners:', err)
-      setError(err.message)
+      // Fallback to api if admin route fails
+      try {
+        const data = await api.getAllBanners()
+        setBanners(data || [])
+      } catch (fallbackErr) {
+        setError(err.message)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -139,27 +149,36 @@ export default function AdminBannersPage() {
       if (!formData.title.trim()) throw new Error('Judul banner harus diisi')
       if (!formData.image) throw new Error('Gambar banner harus diisi')
 
+      const payload = {
+        title: formData.title,
+        subtitle: formData.subtitle || null,
+        image: formData.image,
+        link: formData.link || null,
+        type: formData.type,
+        is_active: formData.isActive,
+        sort_order: editingBanner?.sort_order || banners.length + 1,
+        starts_at: formData.startsAt,
+        expires_at: formData.expiresAt || null,
+      }
+
       if (editingBanner) {
-        await api.updateBanner(editingBanner.id, {
-          title: formData.title,
-          subtitle: formData.subtitle || undefined,
-          image: formData.image,
-          link: formData.link || undefined,
-          type: formData.type,
-          isActive: formData.isActive,
-          startsAt: formData.startsAt,
-          expiresAt: formData.expiresAt || undefined,
+        // Update via API
+        const response = await fetch('/api/admin/promos', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingBanner.id, ...payload }),
         })
+        const result = await response.json()
+        if (!result.success) throw new Error(result.message)
       } else {
-        await api.createBanner({
-          title: formData.title,
-          subtitle: formData.subtitle || undefined,
-          image: formData.image,
-          link: formData.link || undefined,
-          type: formData.type,
-          startsAt: formData.startsAt,
-          expiresAt: formData.expiresAt || undefined,
+        // Create via API
+        const response = await fetch('/api/admin/promos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
         })
+        const result = await response.json()
+        if (!result.success) throw new Error(result.message)
       }
 
       await fetchBanners()
@@ -175,7 +194,11 @@ export default function AdminBannersPage() {
     if (!confirm('Apakah Anda yakin ingin menghapus banner ini?')) return
 
     try {
-      await api.deleteBanner(id)
+      const response = await fetch(`/api/admin/promos?id=${id}`, {
+        method: 'DELETE',
+      })
+      const result = await response.json()
+      if (!result.success) throw new Error(result.message)
       await fetchBanners()
     } catch (err: any) {
       setError(err.message)
@@ -184,7 +207,16 @@ export default function AdminBannersPage() {
 
   const handleToggleActive = async (banner: Banner) => {
     try {
-      await api.updateBanner(banner.id, { isActive: !banner.is_active })
+      const response = await fetch('/api/admin/promos', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: banner.id,
+          is_active: !banner.is_active,
+        }),
+      })
+      const result = await response.json()
+      if (!result.success) throw new Error(result.message)
       await fetchBanners()
     } catch (err: any) {
       setError(err.message)

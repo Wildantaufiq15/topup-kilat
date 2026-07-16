@@ -1,8 +1,8 @@
 # 📊 Progress Report - Topup Kilat
 
-**Tanggal:** 10 Juli 2026
-**Status:** 🔄 Fase 14 - RLS Testing & Bug Fixing
-**Versi:** 4.5.1
+**Tanggal:** 17 Juli 2026
+**Status:** 🔄 IN PROGRESS - VPS & Digiflazz Integration Complete
+**Versi:** 6.0.0
 
 ---
 
@@ -10,7 +10,366 @@
 
 **Topup Kilat** adalah platform marketplace top up game yang memungkinkan pengguna membeli diamond, UC, CP, dan mata uang virtual game secara instan.
 
-**MVP Status:** Payment Gateway aktif, Admin Panel selesai, **Security Hardening Complete!** **Sedang Testing RLS impact!**
+**MVP Status:** 
+- ✅ Payment Gateway aktif
+- ✅ Admin Panel selesai
+- ✅ Security Hardening Complete
+- ✅ **VPS Setup Complete**
+- ✅ **Digiflazz API Integration Complete**
+- ⏳ **Digital Fulfillment** - Pending deposit saldo
+
+---
+
+## ✅ Completed - 17 Juli 2026
+
+### VPS Setup
+- [x] VPS DomaiNesia (1GB RAM, Ubuntu 24.04)
+- [x] Node.js 20 + PM2
+- [x] DNS setup di Hostinger
+- [x] SSL Certificate (Let's Encrypt)
+- [x] Nginx reverse proxy
+
+### Digiflazz Integration
+- [x] KYC Privy.id approved
+- [x] Production Key configured
+- [x] IP Whitelist (103.169.207.161)
+- [x] Proxy API working: `https://api.topupkilat.store`
+
+### Files Created/Updated
+- [x] `VPS_SETUP.md` - Complete VPS documentation
+- [x] `workers/digiflazz-proxy.js` - VPS proxy script
+- [x] `workers/test-digiflazz.js` - Test script
+- [x] `src/lib/digiflazz.ts` - Digiflazz client library
+- [x] `src/app/api/digiflazz/price-list/route.ts`
+- [x] `src/app/api/digiflazz/balance/route.ts`
+- [x] `.env.example` - Updated with Digiflazz vars
+- [x] `.env.local` - Updated with Digiflazz proxy URL
+
+---
+
+## ⚠️ Production Readiness Audit (Updated: 17 Juli 2026)
+
+### Audit Summary
+
+| Kategori | Score | Status |
+|----------|-------|--------|
+| Security Foundation | 9/10 | ✅ Excellent |
+| Fulfillment | 7/10 | ✅ VPS + Proxy Ready |
+| Infrastructure | 8/10 | ✅ VPS, SSL, DNS |
+| Observability | 2/10 | ❌ Tidak ada audit trail |
+| Resilience | 4/10 | 🟠 Rate limiting missing |
+
+**Overall Score: 6/10** (meningkat dari 5/10)
+
+---
+
+## ⚠️ Remaining Tasks
+
+### MUST DO (Blockers)
+
+- [ ] **Deposit Saldo ke Digiflazz**
+  - Saldo = 0, tidak bisa fulfillment
+  - Minimal deposit: ~Rp 500.000
+
+- [ ] **Implementasi Fulfillment Trigger**
+  - File: `src/app/api/callback/sakurupiah/route.ts`
+  - Task: Call Digiflazz API after payment success
+  - Test: paid → delivered (end-to-end)
+
+- [ ] **Tambahkan Rate Limiting**
+  - Paket: `@upstash/ratelimit`
+  - Apply ke: `/api/register`, `/api/login`, `/api/payments/create`
+
+### SHOULD DO (Recommended)
+
+- [ ] **Tambahkan Zod Validation**
+- [ ] **Implementasi Audit Trail**
+
+---
+
+## 🔗 Important Links
+
+| Service | URL | Notes |
+|---------|-----|-------|
+| Website | https://topup-kilat-chi.vercel.app | Production |
+| Digiflazz Proxy | https://api.topupkilat.store | **WORKING** |
+| Digiflazz Dashboard | https://member.digiflazz.com | Admin |
+| VPS | 103.169.207.161 | SSH |
+
+---
+
+## 📊 Estimated Biaya Bulanan
+
+| Item | Harga |
+|------|-------|
+| VPS DomaiNesia | Rp 48.000 |
+| Domain .store (Hostinger) | ~Rp 15.000 |
+| **Total** | **~Rp 63.000/bulan** |
+
+---
+
+*Dokumen ini diupdate pada: 17 Juli 2026*
+
+---
+
+## ⚠️ Production Readiness Audit (13 Juli 2026)
+
+### Audit Summary
+
+| Kategori | Score | Status |
+|----------|-------|--------|
+| Security Foundation | 9/10 | ✅ Excellent |
+| Fungsional | 3/10 | ❌ Fulfillment belum ada |
+| Infrastructure | 7/10 | ✅ Docker, RLS, indexes |
+| Observability | 2/10 | ❌ Tidak ada audit trail |
+| Resilience | 4/10 | 🟠 Rate limiting missing |
+
+**Overall Score: 5/10**
+
+### ✅ Yang Sudah Bagus (TIDAK PERLU DIUBAH)
+
+1. **RLS Supabase** - Semua tabel sudah dengan RLS enabled, INSERT policies untuk orders/payments sudah dicabut
+2. **Webhook Signature Verification** - verifyCallbackSignature dengan timing-safe comparison, dilakukan SEBELUM operasi database
+3. **Server-Side Price Validation** - Voucher discount dihitung ulang dari database, bukan dari input client
+4. **Secrets Management** - Tidak ada kredensial real di git, pre-commit hook aktif
+5. **Database Indexes** - Index untuk payments.provider_ref, payments.merchant_ref, orders.invoice_no sudah ada
+6. **Docker Setup** - Dockerfile multi-stage, non-root user, health check
+7. **CORS Fix** - Digiflazz worker tidak pakai wildcard CORS
+
+### ❌ Yang Harus Diperbaiki Sebelum Go-Live
+
+#### KRITIS - Wajib Fix
+
+**1. Digital Product Fulfillment BELUM Diimplementasi**
+```
+File: src/app/api/callback/sakurupiah/route.ts:273
+Status: TODO comment masih ada
+
+MASALAH:
+User bayar → Payment SUCCESS → TAPI user tidak pernah dapat diamond/UC
+Ini bukan celah keamanan, tapi kegagalan fungsional FATAL
+
+SOLUSI:
+1. Implementasi Digiflazz API integration
+2. Atau tambahkan placeholder yang jelas dengan timeline
+```
+
+**2. Rate Limiting Tidak Ada**
+```
+File: Semua API routes publik
+Status: Tidak ada proteksi
+
+MASALAH:
+- Endpoint bisa di-bombardir request
+- Brute force login memungkinkan
+- Spam order memungkinkan
+
+SOLUSI:
+npm install @upstash/ratelimit @upstash/redis
+```
+
+#### TINGGI - Direkomendasikan
+
+**3. Input Validation (Zod)**
+```
+Status: Tidak ada schema validation
+
+MASALAH:
+TypeScript types tidak berlaku saat runtime
+Invalid data bisa masuk database
+
+SOLUSI:
+Tambahkan Zod schemas untuk semua API routes
+```
+
+**4. Audit Trail / Logging**
+```
+Status: Hanya console.log
+
+MASALAH:
+Log hilang saat server restart
+Tidak ada jejak audit untuk komplain user
+
+SOLUSI:
+- Log ke Supabase table (payment_audit_log)
+- Atau gunakan external logging service
+```
+
+#### SEDANG
+
+**5. Race Condition Protection**
+```
+File: src/app/api/callback/sakurupiah/route.ts
+Status: Ada pengecekan status, tapi tidak ada DB-level locking
+
+MASALAH:
+Double-click atau webhook retry concurrent bisa menyebabkan proses ganda
+
+SOLUSI:
+- SELECT FOR UPDATE di webhook
+- Atau optimistic locking dengan version column
+```
+
+---
+
+## ✅ Todo List Sebelum Go-Live
+
+### MUST DO (Blockers)
+
+- [ ] **Implementasi Digital Fulfillment**
+  - File: `src/app/api/callback/sakurupiah/route.ts`
+  - Baris: ~273
+  - Task: Integrate Digiflazz API setelah payment sukses
+  - Test: paid → delivered (end-to-end)
+
+- [ ] **Tambahkan Rate Limiting**
+  - Paket: `@upstash/ratelimit`
+  - Apply ke: `/api/register`, `/api/login`, `/api/payments/create`
+  - Limit: ~10 req/min untuk auth, ~60 req/min untuk payments
+
+### SHOULD DO (Recommended)
+
+- [ ] **Tambahkan Zod Validation**
+  - Buat schema untuk semua API routes
+  - Validasi input sebelum processing
+
+- [ ] **Implementasi Audit Trail**
+  - Buat table `payment_audit_log` di Supabase
+  - Log: order created, payment success/failed, fulfillment triggered
+
+### NICE TO HAVE (Roadmap)
+
+- [ ] **Fix Race Condition**
+  - Gunakan `SELECT FOR UPDATE` atau optimistic locking
+  - Prioritas: Webhook callback
+
+---
+
+## ✅ Docker Deployment Setup (13 Juli 2026)
+
+### Files Created
+
+| File | Description |
+|------|-------------|
+| `Dockerfile` | Multi-stage build (builder + runner) |
+| `docker-compose.yml` | Local development environment |
+| `.dockerignore` | Exclude unnecessary files |
+| `src/app/api/health/route.ts` | Health check endpoint |
+
+### Dockerfile Features
+
+| Feature | Implementation |
+|---------|----------------|
+| Base Image | `node:20-alpine` |
+| Multi-stage | Builder → Runner |
+| Non-root User | `nextjs` (UID 1001) |
+| Output | `standalone` (Next.js) |
+| HEALTHCHECK | `curl /api/health` every 30s |
+| Port | 3000 |
+
+### Build & Run
+
+```bash
+# Build image
+docker build -t topupkilat .
+
+# Run container
+docker run -p 3000:3000 topupkilat
+
+# Or use Docker Compose
+docker-compose up -d
+```
+
+### Health Check
+
+Endpoint `/api/health` returns:
+```json
+{"status":"ok","timestamp":"2026-07-13T..."}
+```
+
+---
+
+## ✅ Security Fix - Digiflazz Worker CORS (13 Juli 2026)
+
+### Issue
+`workers/digiflazz-proxy.js` had `Access-Control-Allow-Origin: *` header which is unnecessary and potentially insecure.
+
+### Fix
+Removed the CORS header because:
+- Worker is called **server-to-server** (Next.js API route → Cloudflare Worker)
+- CORS headers are only needed for browser-side requests
+- Wildcard `*` allows any origin
+
+### Action Required
+Re-deploy the worker to Cloudflare Workers with the updated code.
+
+---
+
+## ✅ Scripts Cleanup & Pre-commit Hook (13 Juli 2026)
+
+### Issue
+`check-orders.ts` di root repo hardcoded Supabase URL dan anon key, dan file ini ter-tracking di git.
+
+### Fix
+1. **Moved** `check-orders.ts` ke folder `scripts/`
+2. **Updated** untuk baca credentials dari `process.env` (pakai dotenv)
+3. **Pattern** sekarang sama dengan `scripts/check-database.ts`
+
+### Pre-commit Hook Verification
+
+Hook sudah ter-install dan bekerja dengan benar:
+
+```bash
+$ echo "JWT: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9" > test.txt
+$ git add test.txt && git commit -m "test"
+
+🔍 Running pre-commit checks...
+❌ ERROR: Possible secret detected in test.txt
+   Pattern: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+
+✅ Hook berhasil memblokir commit dengan secret pattern!
+```
+
+### Secrets yang Diblokir Hook
+| Pattern | Description |
+|---------|-------------|
+| `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9` | Supabase JWT prefix |
+| `KEY-OjHNVb3GvAgB8DdReQCcscE6p` | Sakurupiah API key |
+| `hjUySZbckJNmtyvWqsya` | Fonnte API key |
+| `DLaQ4_anfDuzXmNRzTZkBUtrx1fcHoEaDIUdcZJboOw` | Supabase service role |
+
+---
+
+## ✅ Performance Optimization - Database Indexes (13 Juli 2026)
+
+### Background
+Folder `apps/api` (NestJS + Prisma backend) telah dihapus karena:
+1. Tidak terintegrasi dengan frontend Next.js yang berjalan
+2. Ada dual database schema (Prisma vs Supabase) yang menyebabkan kebingungan
+3. Dokumentasi menyesatkan karena mencantumkan NestJS sebagai "webhook handler aktif"
+
+### Yang Dihapus
+- `apps/api/` - Entire NestJS backend folder
+- Referensi di README.md ke NestJS webhook handler
+- Prisma references di .gitignore
+- Exclude rules di tsconfig.json dan next.config.ts
+
+### Arsitektur Sekarang
+```
+Frontend (Next.js)
+    ↓
+API Routes (Next.js) - src/app/api/
+    ↓
+Supabase (Database + Auth) / Sakurupiah (Payments) / Fonnte (Notifications)
+```
+
+### Tech Stack (Updated)
+- **Frontend**: Next.js 15 + React + TypeScript
+- **API**: Next.js API Routes (server-side)
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Payment**: Sakurupiah API
+- **Notifications**: Fonnte WhatsApp API
 
 ---
 
@@ -26,13 +385,20 @@
 
 ## ✅ fase 2 - Backend Integration (COMPLETE)
 
-### Perpindahan: Railway → Supabase
+### Arsitektur: Next.js API Routes + Supabase
 
-| Sebelum | Sesudah |
-|---------|---------|
-| Railway (Backend) | Supabase (Database + Auth) |
-| NestJS + Prisma | Supabase Client |
-| Deployment bermasalah | Auto-deploy seamless |
+| Komponen | Teknologi | Fungsi |
+|----------|-----------|--------|
+| API Layer | Next.js API Routes | Handle request, validation, business logic |
+| Database | Supabase (PostgreSQL) | Data storage dengan RLS |
+| Auth | Supabase Auth | User authentication |
+| Payments | Sakurupiah API | Payment gateway integration |
+| Notifications | Fonnte API | WhatsApp notifications |
+
+### Kenapa Tidak Pakai NestJS Lagi?
+- Next.js API Routes sudah cukup untuk kebutuhan MVP
+- Deployment lebih sederhana (single codebase)
+- Tidak perlu maintain dual database schema
 
 ---
 
@@ -837,6 +1203,108 @@ Fee QRIS yang dipotong tidak sesuai dengan dokumentasi.
 
 ---
 
+## ✅ Security Fix - Voucher Discount Manipulation (13 Juli 2026)
+
+### Critical Security Vulnerability Fixed
+
+**Vulnerability:** Client-side price calculation allowed attackers to manipulate voucher discounts.
+
+**Attack Vector:**
+1. Attacker calls Supabase directly from browser console
+2. Creates order with `voucher_discount = full_price` and `total = 0`
+3. `payments/create` endpoint used `order.voucher_discount` from the same row
+4. Server calculated `productPrice - voucherDiscount = 0`, matched with `order.total = 0`
+5. Payment created with Rp 0 or very low amount
+
+### Solutions Implemented
+
+#### 1. Server-side Order Creation API
+**File:** `src/app/api/orders/create/route.ts`
+
+- All price calculations now happen server-side
+- Client only sends: `gameSlug`, `productId`, `userGameId`, `serverId`, `voucherCode`
+- Voucher validation against actual database records
+- Uses `SUPABASE_SERVICE_ROLE_KEY` (bypasses RLS)
+
+#### 2. Enhanced Payment Validation
+**File:** `src/app/api/payments/create/route.ts`
+
+- Validates voucher against actual database, NOT `order.voucher_discount`
+- Checks: `is_active`, `expires_at`, `starts_at`, `usage_limit`, `min_transaction`
+- Detects discount manipulation and rejects with "Order total mismatch"
+- Logs security incidents with full details
+
+#### 3. Checkout Page Updated
+**File:** `src/app/checkout/page.tsx`
+
+- Calls `/api/orders/create` instead of client-side `api.createOrder()`
+- Passes auth token for authenticated users
+
+#### 4. RPC Function for Voucher Usage
+**File:** `supabase/migrations/006_create_increment_voucher_usage.sql`
+
+- Atomic increment of voucher `used_quota`
+- Prevents race conditions
+
+#### 5. RLS Policy Update (Pending Application)
+**File:** `supabase/migrations/007_remove_direct_insert_policies.sql`
+
+- Removes direct INSERT policies for `orders` and `payments`
+- Forces all order creation through validated API route
+- **⚠️ Trade-off Analysis in:** `supabase/migrations/RLS_ANALYSIS.md`
+
+### Voucher Validation Rules
+
+```typescript
+// Voucher must pass ALL checks:
+1. is_active === true
+2. starts_at <= now (if exists)
+3. expires_at > now (if exists)
+4. used_quota < usage_limit (if exists)
+5. subtotal >= min_transaction (if exists)
+```
+
+### Security Test Coverage
+**File:** `__tests__/security.test.ts`
+
+- Valid voucher flow ✓
+- Manipulated discount detection ✓
+- Expired voucher rejection ✓
+- Guest checkout regression ✓
+- Authenticated checkout regression ✓
+
+### Migration Order
+
+1. Apply `006_create_increment_voucher_usage.sql` (RPC function)
+2. Test checkout flow with new API
+3. Apply `007_remove_direct_insert_policies.sql` (RLS cleanup)
+4. Run regression tests
+5. Verify guest checkout still works
+
+---
+
+## ✅ Performance Optimization - Database Indexes (13 Juli 2026)
+
+### Background
+Webhook callback harus lookup payment secepat mungkin. Tanpa index yang tepat, setiap callback akan melakukan sequential scan.
+
+### Indexes Added
+**File:** `supabase/migrations/008_add_performance_indexes.sql`
+
+| Table | Column | Index Name | Query Pattern |
+|-------|--------|------------|---------------|
+| `payments` | `provider_ref` | `idx_payments_provider_ref` | `.eq('provider_ref', trx_id)` |
+| `payments` | `merchant_ref` | `idx_payments_merchant_ref` | `.eq('merchant_ref', merchant_ref)` |
+| `orders` | `invoice_no` | `idx_orders_invoice_no` | Quick lookup by invoice |
+
+### ILIKE Fallback Removed
+Kode fallback untuk `ILIKE '%prefix%'` di callback route dihapus karena:
+1. Dead code - `trx_id` dan `merchant_ref` lookup akan selalu berhasil
+2. ILIKE dengan leading wildcard tidak bisa pakai B-tree index
+3. Pattern parsing tidak robust jika format berubah
+
+---
+
 ## 📝 Catatan 10 Juli 2026 - Deployment & Testing
 
 ### Build Error Fix
@@ -908,32 +1376,615 @@ Type error: Argument of type 'string | undefined' is not assignable to parameter
 
 ---
 
-## Pending: Full Flow Testing
+*Dokumen ini diupdate pada: 12 Juli 2026*
 
-**待测试 (Tomorrow):**
-1. ✅ Public pages - Homepage, game detail, products
-2. ⏳ Auth flow - Register, login, forgot password
-3. ⏳ Checkout flow - Create order, create payment
-4. ⏳ User dashboard - Order history, profile
-5. ⏳ Admin panel - All CRUD operations
+---
 
-**Jika ada error 'Permission denied':**
-- Check RLS policy untuk tabel tersebut
-- Mungkin perlu INSERT/UPDATE policy tambahan
-- Bisa jadi auth.uid() tidak match dengan user_id
+## ✅ Fase 14 - RLS & Flow Fixes (COMPLETE)
 
-**Scripts untuk debugging:**
-```bash
-# Check RLS status
-npx tsx scripts/check-rls-status.ts
+### Tanggal: 12 Juli 2026
 
-# Verify RLS migration
-# Run scripts/verify-rls-migration.sql di Supabase SQL Editor
+### Problems yang Ditemukan:
 
-# Check database data
-npx tsx scripts/check-database.ts
+1. **Guest checkout fails** - "permission denied for table orders"
+   - Root cause: orders table tidak punya INSERT policy untuk anon role
+
+2. **Profile creation fails after register** - "Error creating profile"
+   - Root cause: users table tidak punya INSERT policy untuk authenticated users
+
+3. **User profile not found** - "Cannot coerce to single JSON object" (406 error)
+   - Root cause: `.single()` throws error saat tidak ada data
+
+4. **Promo banners 404** - Image file tidak ada
+   - Root cause: Banner images seperti `/promos/promo-1.jpg` tidak ada di public folder
+
+5. **Image 400 errors** - SVG images tidak bisa di-load via next/image
+   - Root cause: SVG files perlu `unoptimized` flag
+
+### Solutions yang Diimplementasikan:
+
+#### 1. RLS Fix (SQL Migration)
+
+**File:** `supabase/migrations/002_fix_rls_guest_checkout.sql`
+
+```sql
+-- Guest checkout: INSERT orders untuk anon
+CREATE POLICY "Anon can insert own orders"
+ON public.orders FOR INSERT TO anon
+WITH CHECK (user_id IS NULL);
+
+-- Profile creation: INSERT users untuk authenticated
+CREATE POLICY "Users can insert own profile"
+ON public.users FOR INSERT TO authenticated
+WITH CHECK (id = (auth.uid())::uuid);
+
+-- Guest payments: INSERT payments untuk anon
+CREATE POLICY "Anon can insert payments for guest orders"
+ON public.payments FOR INSERT TO anon;
+
+-- Read own orders/payments untuk anon
+CREATE POLICY "Anon can select own orders"
+ON public.orders FOR SELECT TO anon USING (user_id IS NULL);
+```
+
+#### 2. Code Fixes
+
+**Files Updated:**
+- `src/context/AuthContext.tsx` - use `maybeSingle()` instead of `single()`, clear checkout on logout
+- `src/lib/api.ts` - use `maybeSingle()` and add retry logic for profile creation
+- `src/app/components/PromoSection.tsx` - add error handling and default banners
+
+#### 3. Default Promo Banners Created
+
+**Files Created:**
+- `public/promos/promo-placeholder.svg` - Default placeholder
+- `public/promos/promo-1.svg` - Diskon 10%
+- `public/promos/promo-2.svg` - Cashback Rp 5.000
+- `public/promos/promo-3.svg` - Proses Cepat
+
+**SQL Migrations Created:**
+- `supabase/migrations/002_fix_rls_guest_checkout.sql` - RLS fix
+- `supabase/migrations/003_update_promos_images.sql` - Update promos images
+
+---
+
+## ✅ Fase 15 - Admin Panel Fixes (COMPLETE)
+
+### Tanggal: 12 Juli 2026
+
+### Problems yang Ditemukan:
+
+1. **Admin transactions tidak update** - Data tidak tampil karena RLS
+2. **Bucket not found** - Storage bucket "game-images" tidak ada
+3. **Banner/Voucher/User admin tidak berfungsi** - RLS blocking
+4. **Minimum transaction Rp 10.000** - Perlu dihapus
+5. **Checkout session stuck** - Invoice lama muncul setelah logout
+
+### Solutions yang Diimplementasikan:
+
+#### 1. Admin API Routes (Bypass RLS)
+
+**Files Created:**
+- `src/app/api/admin/orders/route.ts` - CRUD orders
+- `src/app/api/admin/games/route.ts` - CRUD games
+- `src/app/api/admin/games/[id]/products/route.ts` - CRUD products
+- `src/app/api/admin/promos/route.ts` - CRUD promos/banners
+- `src/app/api/admin/vouchers/route.ts` - CRUD vouchers
+- `src/app/api/admin/users/route.ts` - CRUD users
+
+#### 2. Admin Pages Updated
+
+**Files Updated:**
+- `src/app/admin/page.tsx` - Dashboard gunakan API
+- `src/app/admin/transactions/page.tsx` - Gunakan API
+- `src/app/admin/products/page.tsx` - Gunakan API
+- `src/app/admin/banners/page.tsx` - Gunakan API
+- `src/app/admin/vouchers/page.tsx` - Gunakan API
+- `src/app/admin/users/page.tsx` - Gunakan API
+
+#### 3. Storage Bucket SQL
+
+**File:** `supabase/migrations/005_create_storage_buckets.sql`
+
+```sql
+-- Create buckets
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('game-images', 'game-images', true, 5242880, ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'])
+ON CONFLICT (id) DO NOTHING;
+-- ... (promo-banners, avatars)
+```
+
+#### 4. Minimum Transaction Removed
+
+**File:** `src/app/api/payments/create/route.ts`
+- Removed `MIN_TRANSACTION_AMOUNT` check
+- Only maximum limit remains (Rp 50.000.000)
+
+#### 5. Checkout Session Fix
+
+**File:** `src/context/AuthContext.tsx`
+- Clear checkout state from sessionStorage saat logout
+- Checkout page validate session sebelum restore
+
+---
+
+## 📝 SQL Migrations yang perlu di-run:
+
+1. `supabase/migrations/002_fix_rls_guest_checkout.sql`
+2. `supabase/migrations/003_update_promos_images.sql`
+3. `supabase/migrations/004_fix_rls_authenticated_users.sql`
+4. `supabase/migrations/005_create_storage_buckets.sql`
+
+---
+
+## 🔄 Testing Checklist (12 Juli 2026)
+
+### Testing Results:
+
+- [x] Public pages - Homepage, games, products ✅
+- [x] Auth flow - Register, login, logout ✅
+- [x] Guest checkout - Create order without login ✅
+- [x] Checkout flow - Create payment ✅
+- [x] User dashboard - Order history, profile ✅
+- [x] Admin panel - CRUD operations ✅
+- [x] Promo banners - Display correctly ✅
+- [x] Checkout session - Clear on logout ✅
+- [x] Minimum transaction - Removed ✅
+
+---
+
+## 📊 Project Status
+
+| Component | Status | Notes |
+|----------|--------|-------|
+| Frontend MVP | ✅ Complete | All pages working |
+| Database | ✅ Complete | 13 tables, RLS enabled |
+| Auth System | ✅ Complete | Register, login, logout |
+| Payment Gateway | ✅ Complete | Sakurupiah integrated |
+| Admin Panel | ✅ Complete | Full CRUD |
+| Guest Checkout | ✅ Complete | Working |
+| Logged-in Checkout | ✅ Complete | Working |
+| Promo Banners | ✅ Complete | SVG images |
+| Storage | ⚠️ Setup Needed | Run migration |
+| Security | ✅ Complete | RLS + Webhook verification |
+
+---
+
+## ✅ fase 16 - Comprehensive Code Audit (COMPLETE)
+
+### Tanggal: 15 Juli 2026
+
+### Ringkasan Audit
+
+**Overall Health Score:** ~7/10
+
+| Kategori | Score | Status |
+|----------|-------|--------|
+| Security Foundation | 8/10 | ✅ Good |
+| Fungsional | 5/10 | ❌ Fulfillment belum ada |
+| Code Quality | 6/10 | 🟡 Perlu cleanup |
+| Performance | 6/10 | 🟡 Polling inefficient |
+| Maintainability | 6/10 | 🟡 Testing missing |
+
+---
+
+### 🔴 CRITICAL Issues Found
+
+#### 1. Digital Fulfillment BELUM Diimplementasi
+
+```
+File: src/app/api/callback/sakurupiah/route.ts:273
+Status: TODO comment masih ada
+
+MASALAH:
+User bayar → Payment SUCCESS → Item game TIDAK PERNAH dikirim
+Ini adalah kegagalan fungsional FATAL - user tidak dapat diamond/UC
+
+DAMPAK: User会觉得诈骗, tidak akan order lagi, reputasi hancur
+
+PRIORITAS: 🔴 CRITICAL - WAJIB FIX SEBELUM GO-LIVE
+```
+
+#### 2. Race Condition di Webhook Callback
+
+```
+File: src/app/api/callback/sakurupiah/route.ts
+MASALAH:
+Tidak ada idempotency key untuk webhook
+Sakurupiah bisa kirim callback BERULANG KALI untuk satu transaksi
+
+DAMPAK:
+- Double update status
+- Double notification
+- Double fulfillment (kalau implemented)
+
+SOLUSI:
+CREATE TABLE payment_callback_log (
+  trx_id VARCHAR UNIQUE,
+  processed_at TIMESTAMP,
+  response_data JSONB
+)
+
+CHECK sebelum update: IF NOT EXISTS (SELECT 1 FROM payment_callback_log WHERE trx_id = ?)
+
+PRIORITAS: 🔴 CRITICAL - WAJIB FIX SEBELUM GO-LIVE
+```
+
+#### 3. Checkout State Race Condition
+
+```
+File: src/app/checkout/page.tsx:126-156
+MASALAH:
+Restore checkout state dari sessionStorage tanpa validasi
+User bisa melihat state checkout yang sudah expired
+
+SCENARIO:
+1. User A buat order, tutup tab
+2. User B buka browser yang sama
+3. User B bisa lihat state checkout User A
+
+SOLUSI:
+- Validasi order masih PENDING sebelum restore
+- Clear state setelah payment complete/expired
+- Gunakan encrypted session atau server-side session
+
+PRIORITAS: 🟠 HIGH
 ```
 
 ---
 
-*Dokumen ini diupdate pada: 10 Juli 2026*
+### 🟠 HIGH Issues Found
+
+#### 4. Rate Limiting Tidak Ada
+
+```
+File: Semua API routes publik
+Status: Tidak ada proteksi
+
+ENDPOINTS TERDAMPAK:
+- /api/register
+- /api/login
+- /api/payments/create
+- /api/callback/sakurupiah
+- /api/admin/*
+
+MASALAH:
+- Endpoint bisa di-bombardir request
+- Brute force login memungkinkan
+- Spam order memungkinkan
+- Admin APIs bisa di-abuse
+
+SOLUSI:
+npm install @upstash/ratelimit @upstash/redis
+
+CONTOH IMPLEMENTASI:
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
+
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(10, "1 m"),
+});
+
+PRIORITAS: 🟠 HIGH - WAJIB FIX SEBELUM GO-LIVE
+```
+
+#### 5. Input Validation Tidak Ada (Zod)
+
+```
+File: Semua API routes
+MASALAH:
+TypeScript types tidak berlaku saat runtime
+Invalid data bisa masuk database
+
+CONTOH DI src/app/api/orders/create/route.ts:
+- Interface ada tapi tidak ada runtime validation
+- Invalid UUID bisa masuk
+- Empty strings tidak di-trim/validate
+
+SOLUSI:
+import { z } from "zod";
+
+const createOrderSchema = z.object({
+  gameSlug: z.string().min(1),
+  productId: z.string().uuid(),
+  userGameId: z.string().min(1),
+  serverId: z.string().optional(),
+  voucherCode: z.string().optional(),
+});
+
+PRIORITAS: 🟠 HIGH
+```
+
+#### 6. Voucher Usage Counter Race Condition
+
+```
+File: src/app/api/orders/create/route.ts:282-289
+MASALAH:
+increment_voucher_usage pakai RPC tapi tidak ada locking
+Dua order concurrent dengan voucher yang sama bisa melebihi quota
+
+SOLUSI:
+- Gunakan SELECT FOR UPDATE
+- Atau optimistic locking dengan version column
+- Atau transaction dengan SERIALIZABLE isolation
+
+PRIORITAS: 🟠 HIGH
+```
+
+---
+
+### 🟡 MEDIUM Issues Found
+
+#### 7. Payment Status Polling Inefficient
+
+```
+File: src/app/checkout/page.tsx:240-254
+MASALAH:
+- Polling setiap 5 detik SEKALI KALI TANPA stopping
+- Tidak ada timeout
+- Tidak ada exponential backoff saat error
+- Tab bisa polling SELAMANYA
+
+SCENARIO WORST CASE:
+User buka checkout, laptop tidur, tab tetap polling
+
+SOLUSI:
+- Implement exponential backoff (5s → 10s → 20s → 60s max)
+- Stop polling setelah timeout (e.g., 30 menit)
+- Stop polling saat tab tidak visible (Page Visibility API)
+
+PRIORITAS: 🟡 MEDIUM
+```
+
+#### 8. Auth Helper Duplication
+
+```
+File: src/lib/api.ts:598-623
+DUPLIKASI DENGAN: src/context/AuthContext.tsx
+
+auth helper di api.ts:
+- setSession() - localStorage
+- getSession() - localStorage
+- clearSession() - localStorage
+- isLoggedIn() - localStorage
+
+AuthContext:
+- useAuth() hook dengan session dari Supabase
+
+MASALAH:
+- Data tidak sinkron
+- auth.isLoggedIn() bisa return true padahal session expired
+- localStorage bisa dibaca JavaScript lain (XSS risk)
+
+SOLUSI:
+Hapus auth helper di api.ts, gunakan hanya AuthContext
+
+PRIORITAS: 🟡 MEDIUM
+```
+
+#### 9. Dead Code - api.createOrder()
+
+```
+File: src/lib/api.ts:168-243
+STATUS: @deprecated tapi masih ada di codebase
+
+FUNGSI INI SUDAH TIDAK DIGUNAKAN:
+- Checkout page pakai /api/orders/create route
+- api.createOrder() tidak pernah dipanggil
+
+SOLUSI:
+Hapus fungsi ini untuk mengurangi confusion
+
+PRIORITAS: 🟢 LOW
+```
+
+#### 10. Hardcoded URLs
+
+```
+File: src/lib/sakurupiah.ts:210-211
+HARDCODED:
+callback_url: 'https://topup-kilat-chi.vercel.app/api/callback/sakurupiah'
+return_url: 'https://topup-kilat-chi.vercel.app/checkout/success'
+
+MASALAH:
+- Tidak bisa switch environment
+- Hard to test locally
+- URL bisa berubah
+
+SOLUSI:
+callback_url: process.env.SAKURUPIAH_CALLBACK_URL
+return_url: process.env.NEXT_PUBLIC_BASE_URL + '/checkout/success'
+
+PRIORITAS: 🟡 MEDIUM
+```
+
+#### 11. CSRF Token Tidak Ada
+
+```
+File: src/app/api/*/route.ts
+MASALAH:
+API routes tidak ada CSRF protection
+Bisa diserang dari malicious site
+
+SCENARIO:
+1. User login ke topupkilat.com
+2. Kunjungi evil.com di tab yang sama
+3. evil.com trigger request ke topupkilat.com/api/orders/create
+4. Request berhasil karena cookie masih valid
+
+SOLUSI:
+- Gunakan SameSite=Strict cookies
+- Atau generate CSRF token untuk state-changing operations
+
+PRIORITAS: 🟡 MEDIUM
+```
+
+---
+
+### 🟢 LOW Issues Found
+
+#### 12. Type Inconsistency
+
+```
+File: src/types/index.ts vs src/lib/supabase.ts
+
+types/index.ts:
+- GameCategory = 'mobile' | 'pc' | 'console' | 'voucher'
+- OrderStatus = 'pending_payment' | 'paid' | ...
+
+supabase.ts (Database):
+- category = 'MOBILE' | 'PC' | 'CONSOLE' | 'WEB'
+- status = 'PANK' | 'PAID' | ...
+
+MASALAH:
+- Perlu mapping manual di banyak tempat
+- Mudah salah mapping
+- Testing susah
+
+SOLUSI:
+- Generate types dari Supabase schema
+- Atau gunakan satu sumber types saja
+
+PRIORITAS: 🟢 LOW
+```
+
+#### 13. Missing Security Headers
+
+```
+File: next.config.ts
+SEHARUSNYA ADA:
+- Content-Security-Policy
+- X-Frame-Options: DENY
+- X-Content-Type-Options: nosniff
+- Referrer-Policy: strict-origin-when-cross-origin
+- Permissions-Policy
+
+SOLUSI:
+Tambahkan di next.config.ts:
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          ...
+        ],
+      },
+    ];
+  },
+
+PRIORITAS: 🟢 LOW
+```
+
+#### 14. Error Messages Leaking Internal Info
+
+```
+File: Semua API routes
+CONTOH:
+console.error(`[${requestId}] Order not found:`, orderId)
+console.error(`[${requestId}] Game not found:`, gameSlug)
+
+MASALAH:
+- Di development: OK
+- Di production: Internal paths dan IDs expose
+
+SOLUSI:
+- Log disimpan terpisah (database/file)
+- User-facing error message di-sanitize
+
+PRIORITAS: 🟢 LOW
+```
+
+---
+
+### 📋 Quality Metrics Summary
+
+| Kategori | Score | Catatan |
+|----------|-------|---------|
+| Clean Code | 6/10 | Duplication ada, dead code ada |
+| Readability | 8/10 | Good structure, proper naming |
+| Maintainability | 6/10 | Testing missing, error handling inconsistent |
+| Scalability | 5/10 | Caching strategy tidak ada |
+| Security | 8/10 | RLS good, webhook OK, tapi CSRF & rate limit missing |
+| Performance | 6/10 | Polling inefficient, N+1 query ada |
+| Responsiveness | 9/10 | Mobile-friendly, good UX |
+
+---
+
+### 📝 Files yang Perlu Direfactor
+
+| File | Alasan | Prioritas |
+|------|--------|-----------|
+| `src/app/api/callback/sakurupiah/route.ts` | Race condition, missing idempotency | 🔴 |
+| `src/app/api/orders/create/route.ts` | Missing Zod validation, voucher race | 🟠 |
+| `src/app/api/payments/create/route.ts` | Missing Zod validation | 🟠 |
+| `src/app/checkout/page.tsx` | Polling inefficient, state issue | 🟡 |
+| `src/lib/api.ts` | Dead code, auth duplication | 🟡 |
+| `src/lib/sakurupiah.ts` | Hardcoded URLs | 🟡 |
+| `src/app/admin/page.tsx` | N+1 query problem | 🟡 |
+
+---
+
+### 🎯 Checklist Sebelum Go-Live
+
+### 🔴 MUST DO (Blockers)
+
+- [ ] **Implementasi Digital Fulfillment (Digiflazz)**
+  - File: `src/app/api/callback/sakurupiah/route.ts`
+  - Task: Integrate Digiflazz API setelah payment sukses
+  - Test: paid → delivered (end-to-end)
+
+- [ ] **Webhook Idempotency**
+  - File: `src/app/api/callback/sakurupiah/route.ts`
+  - Task: Buat payment_callback_log table
+  - Task: Implement deduplication logic
+
+### 🟠 SHOULD DO (Recommended)
+
+- [ ] **Tambahkan Rate Limiting**
+  - Paket: `@upstash/ratelimit`
+  - Apply ke: `/api/register`, `/api/login`, `/api/payments/create`
+
+- [ ] **Tambahkan Zod Validation**
+  - Buat schema untuk semua API routes
+  - Validasi input sebelum processing
+
+- [ ] **Fix Payment Polling**
+  - Implement exponential backoff
+  - Stop polling saat tab not visible
+  - Timeout setelah 30 menit
+
+- [ ] **Fix Voucher Race Condition**
+  - Gunakan `SELECT FOR UPDATE`
+  - Atau optimistic locking
+
+### 🟡 NICE TO HAVE
+
+- [ ] Hapus dead code (`api.createOrder()`)
+- [ ] Fix auth helper duplication
+- [ ] Hardcoded URLs → Environment variables
+- [ ] N+1 query optimization
+- [ ] Security headers
+- [ ] Error message sanitization
+
+### 🟢 ROADMAP
+
+- [ ] **Phase 1 (1-2 days):** Critical fixes
+  - Digital Fulfillment
+  - Webhook Idempotency
+
+- [ ] **Phase 2 (2-3 days):** Quality improvements
+  - Rate Limiting
+  - Zod Validation
+  - Polling optimization
+
+- [ ] **Phase 3 (1-2 days):** Polish
+  - Code cleanup
+  - Security hardening
+  - Testing
+
+---
+
+*Dokumen ini diupdate pada: 15 Juli 2026*

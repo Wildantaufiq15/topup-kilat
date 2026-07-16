@@ -38,10 +38,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('users')
         .select('*')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
 
       if (error) {
         console.error('Error fetching profile:', error)
+        // Profile might not exist yet (just registered)
         setProfile(null)
         return
       }
@@ -120,26 +121,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Registration failed')
     }
 
-    // Create user profile in users table
-    const { error: profileError } = await supabase.from('users').insert({
-      id: authData.user.id,
-      email: data.email,
-      name: data.name,
-      phone: data.phone || null,
-      role: 'USER',
-      member_tier: 'BRONZE',
-      points_balance: 0,
-      is_verified: false,
-      is_active: true,
-    })
+    // Create user profile in users table with retry
+    let profileError = null
+    let retries = 0
+    const maxRetries = 3
+
+    while (retries < maxRetries) {
+      const { error } = await supabase.from('users').insert({
+        id: authData.user.id,
+        email: data.email,
+        name: data.name,
+        phone: data.phone || null,
+        role: 'USER',
+        member_tier: 'BRONZE',
+        points_balance: 0,
+        is_verified: false,
+        is_active: true,
+      })
+
+      if (!error) {
+        profileError = null
+        break
+      }
+
+      profileError = error
+      console.warn(`Profile creation attempt ${retries + 1} failed:`, error.message)
+      retries++
+
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
 
     if (profileError) {
-      console.error('Error creating profile:', profileError)
-      // Don't throw - user was created, profile creation can be retried
+      console.error('Error creating profile after retries:', profileError)
+      // Don't throw - user was created in auth, profile can be created later
+      // The profile will be created on next login or can be created manually
     }
+
+    // Fetch the created profile
+    await fetchProfile(authData.user.id)
   }
 
   const logout = async () => {
+    // Clear checkout state from sessionStorage
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('topupkilat_checkout_state')
+    }
+
     const { error } = await supabase.auth.signOut()
     if (error) {
       throw new Error(error.message)

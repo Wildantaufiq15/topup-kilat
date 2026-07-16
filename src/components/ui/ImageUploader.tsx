@@ -71,6 +71,8 @@ export function ImageUploader({
         })
 
       if (uploadError) {
+        // Storage upload failed, will fallback to base64
+        console.warn('Storage upload failed, using base64:', uploadError.message)
         throw uploadError
       }
 

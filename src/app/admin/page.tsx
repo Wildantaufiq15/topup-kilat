@@ -16,7 +16,6 @@ import {
   Image as ImageIcon,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
-import { supabase } from '@/lib/supabase'
 
 interface Stats {
   totalOrders: number
@@ -49,42 +48,34 @@ export default function AdminOverview() {
   const fetchStats = async () => {
     setIsLoading(true)
     try {
-      // Get today's date
-      const today = new Date().toISOString().split('T')[0]
+      // Fetch all orders via API
+      const response = await fetch('/api/admin/orders')
+      const result = await response.json()
 
-      // Fetch all orders with related data
-      const { data: orders, error: ordersError } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          game:games(name),
-          product:game_products(name, price)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(100)
-
-      if (ordersError) throw ordersError
+      if (!result.success) throw new Error(result.message)
+      const orders = result.data || []
 
       // Calculate stats
+      const today = new Date().toISOString().split('T')[0]
       const totalOrders = orders?.length || 0
       const totalRevenue = orders
-        ?.filter(o => o.status === 'PAID' || o.status === 'SUCCESS')
-        .reduce((sum, o) => sum + (o.total || 0), 0) || 0
+        ?.filter((o: any) => o.status === 'PAID' || o.status === 'SUCCESS')
+        .reduce((sum: number, o: any) => sum + (o.total || 0), 0) || 0
 
-      const pendingOrders = orders?.filter(o => o.status === 'PENDING').length || 0
+      const pendingOrders = orders?.filter((o: any) => o.status === 'PENDING').length || 0
 
-      const todayOrdersList = orders?.filter(o => o.created_at?.startsWith(today)) || []
+      const todayOrdersList = orders?.filter((o: any) => o.created_at?.startsWith(today)) || []
       const todayOrders = todayOrdersList.length
       const todayRevenue = todayOrdersList
-        .filter(o => o.status === 'PAID' || o.status === 'SUCCESS')
-        .reduce((sum, o) => sum + (o.total || 0), 0)
+        .filter((o: any) => o.status === 'PAID' || o.status === 'SUCCESS')
+        .reduce((sum: number, o: any) => sum + (o.total || 0), 0)
 
-      const successOrders = orders?.filter(o => o.status === 'PAID' || o.status === 'SUCCESS').length || 0
+      const successOrders = orders?.filter((o: any) => o.status === 'PAID' || o.status === 'SUCCESS').length || 0
       const successRate = totalOrders > 0 ? (successOrders / totalOrders) * 100 : 0
 
       // Get top products
       const productCounts: Record<string, any> = {}
-      orders?.forEach(order => {
+      orders?.forEach((order: any) => {
         const productName = order.product?.name || 'Unknown'
         if (!productCounts[productName]) {
           productCounts[productName] = {

@@ -62,6 +62,54 @@ npm run build
 npm start
 ```
 
+## Docker
+
+### Build Image
+
+```bash
+# Build the Docker image
+docker build -t topupkilat .
+
+# Run the container
+docker run -p 3000:3000 \
+  -e NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co \
+  -e NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key \
+  -e SUPABASE_SERVICE_ROLE_KEY=your-service-role-key \
+  -e SAKURUPIAH_API_ID=your-api-id \
+  -e SAKURUPIAH_API_KEY=your-api-key \
+  -e SAKURUPIAH_SANDBOX=true \
+  -e FONNTE_API_KEY=your-fonnte-key \
+  -e ADMIN_WHATSAPP_NUMBER=08xxxxxxxxx \
+  topupkilat
+```
+
+### Docker Compose (Local Development)
+
+```bash
+# Create .env.docker from .env.example with your values
+cp .env.example .env.docker
+
+# Edit .env.docker with your credentials
+
+# Start the application
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop
+docker-compose down
+```
+
+### Health Check
+
+The container includes a health check at `/api/health`. Docker will automatically monitor this endpoint.
+
+```bash
+# Check container health
+docker inspect --format='{{.State.Health.Status}}' topupkilat
+```
+
 ## Database Setup
 
 ### Running Migrations
@@ -310,7 +358,6 @@ npx tsx scripts/test-callback-security.ts
 | File | Description |
 |------|-------------|
 | `src/app/api/callback/sakurupiah/route.ts` | Sakurupiah payment callback (signature verified) |
-| `apps/api/src/modules/payments/payments.service.ts` | NestJS webhook handler (signature verified) |
 
 ### RLS Best Practices
 

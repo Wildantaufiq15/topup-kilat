@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -17,7 +17,7 @@ function RegisterForm() {
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/dashboard/riwayat'
 
-  const { register, isAuthenticated } = useAuth()
+  const { register, isAuthenticated, isLoading: authLoading } = useAuth()
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -28,11 +28,12 @@ function RegisterForm() {
   const [agreed, setAgreed] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Redirect if already authenticated
-  if (isAuthenticated) {
-    router.push(redirect)
-    return null
-  }
+  // Redirect if already authenticated - use useEffect to avoid setState during render
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.push(redirect)
+    }
+  }, [isAuthenticated, authLoading, router, redirect])
 
   const validate = () => {
     const newErrors: Record<string, string> = {}

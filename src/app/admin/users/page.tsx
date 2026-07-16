@@ -11,7 +11,6 @@ import {
   MoreVertical,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
-import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
 
@@ -47,25 +46,30 @@ export default function UsersPage() {
   const fetchUsers = async () => {
     setIsLoading(true)
     try {
-      // Fetch users with orders count
-      const { data: usersData, error: usersError } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false })
+      // Fetch users via API
+      const response = await fetch('/api/admin/users')
+      const result = await response.json()
 
-      if (usersError) throw usersError
+      if (!result.success) throw new Error(result.message)
 
-      // Get orders count for each user
-      const usersWithCounts = await Promise.all(
-        (usersData || []).map(async (user) => {
-          const { count } = await supabase
-            .from('orders')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id)
+      // Get orders count for each user via API
+      const ordersResponse = await fetch('/api/admin/orders')
+      const ordersResult = await ordersResponse.json()
+      const orders = ordersResult.data || []
 
-          return { ...user, orders_count: count || 0 }
-        })
-      )
+      // Count orders per user
+      const orderCounts: Record<string, number> = {}
+      orders.forEach((order: any) => {
+        if (order.user_id) {
+          orderCounts[order.user_id] = (orderCounts[order.user_id] || 0) + 1
+        }
+      })
+
+      // Map orders count to users
+      const usersWithCounts = (result.data || []).map((user: any) => ({
+        ...user,
+        orders_count: orderCounts[user.id] || 0,
+      }))
 
       setUsers(usersWithCounts)
     } catch (error) {
@@ -77,33 +81,43 @@ export default function UsersPage() {
 
   const handleToggleActive = async (user: User) => {
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ is_active: !user.is_active })
-        .eq('id', user.id)
-
-      if (error) throw error
+      const response = await fetch('/api/admin/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: user.id,
+          is_active: !user.is_active,
+        }),
+      })
+      const result = await response.json()
+      if (!result.success) throw new Error(result.message)
       toast.success(`User ${user.is_active ? 'dinonaktifkan' : 'diaktifkan'}`)
       fetchUsers()
-    } catch (error: any) {
-      toast.error(error.message || 'Gagal update status')
+    } catch (error) {
+      console.error('Error toggling user:', error)
+      toast.error('Gagal update status')
     }
   }
 
   const handleUpdateRole = async (userId: string, newRole: User['role']) => {
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({ role: newRole })
-        .eq('id', userId)
-
-      if (error) throw error
+      const response = await fetch('/api/admin/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: userId,
+          role: newRole,
+        }),
+      })
+      const result = await response.json()
+      if (!result.success) throw new Error(result.message)
       toast.success('Role berhasil diupdate')
       setShowEditModal(false)
       setSelectedUser(null)
       fetchUsers()
-    } catch (error: any) {
-      toast.error(error.message || 'Gagal update role')
+    } catch (error) {
+      console.error('Error updating role:', error)
+      toast.error('Gagal update role')
     }
   }
 

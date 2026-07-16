@@ -1,0 +1,60 @@
+# =====================================================
+# Topup Kilat - Docker Compose for Local Development
+# =====================================================
+#
+# Usage:
+#   docker-compose up -d          # Start in background
+#   docker-compose logs -f         # View logs
+#   docker-compose down            # Stop and remove
+#
+# For production, use:
+#   docker build -t topupkilat .
+#   docker run -p 3000:3000 topupkilat
+# =====================================================
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      # Supabase
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      # Sakurupiah
+      - SAKURUPIAH_API_ID=${SAKURUPIAH_API_ID}
+      - SAKURUPIAH_API_KEY=${SAKURUPIAH_API_KEY}
+      - SAKURUPIAH_SANDBOX=${SAKURUPIAH_SANDBOX:-true}
+      # Fonnte
+      - FONNTE_API_KEY=${FONNTE_API_KEY}
+      - ADMIN_WHATSAPP_NUMBER=${ADMIN_WHATSAPP_NUMBER}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Uncomment below for Supabase local development
+  # supabase:
+  #   image: supabase/postgres:15.1.0.147
+  #   ports:
+  #     - "5432:5432"
+  #   environment:
+  #     POSTGRES_PASSWORD: postgres
+  #     POSTGRES_DB: postgres
+  #   volumes:
+  #     - supabase-db:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+# volumes:
+#   supabase-db:

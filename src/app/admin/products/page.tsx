@@ -77,14 +77,13 @@ export default function ProductsPage() {
   const fetchGames = async () => {
     setIsLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('games')
-        .select('*')
-        .order('sort_order')
+      const response = await fetch('/api/admin/games')
+      const result = await response.json()
 
-      if (error) throw error
-      setGames(data || [])
-      if (data && data.length > 0 && !selectedGame) {
+      if (!result.success) throw new Error(result.message)
+      const data = result.data || []
+      setGames(data)
+      if (data.length > 0 && !selectedGame) {
         setSelectedGame(data[0])
       }
     } catch (error) {
@@ -96,16 +95,25 @@ export default function ProductsPage() {
 
   const fetchProducts = async (gameId: string) => {
     try {
-      const { data, error } = await supabase
+      // Fetch products from API
+      const response = await fetch(`/api/admin/games/${gameId}/products`)
+      const result = await response.json()
+
+      if (!result.success) throw new Error(result.message)
+      setProducts(result.data || [])
+    } catch (error) {
+      // Fallback to direct fetch if API fails
+      const { data, error: fetchError } = await supabase
         .from('game_products')
         .select('*')
         .eq('game_id', gameId)
-        .order('sort_order')
+        .order('price')
 
-      if (error) throw error
+      if (fetchError) {
+        console.error('Error fetching products:', fetchError)
+        return
+      }
       setProducts(data || [])
-    } catch (error) {
-      console.error('Error fetching products:', error)
     }
   }
 

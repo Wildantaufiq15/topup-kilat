@@ -8,6 +8,41 @@ import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
+// Default promo banners as fallback
+const DEFAULT_BANNERS: Array<{
+  id: string
+  title: string
+  description: string
+  image: string
+  link: string
+  originalImage: string
+}> = [
+  {
+    id: 'default-1',
+    title: 'Diskon 10%',
+    description: 'Top Up Pertama',
+    image: '/promos/promo-1.svg',
+    link: '/promo/cashback',
+    originalImage: '/promos/promo-1.svg',
+  },
+  {
+    id: 'default-2',
+    title: 'Cashback Rp 5.000',
+    description: 'Setiap Transaksi',
+    image: '/promos/promo-2.svg',
+    link: '/promo/cashback',
+    originalImage: '/promos/promo-2.svg',
+  },
+  {
+    id: 'default-3',
+    title: 'Proses Cepat',
+    description: '1-5 Menit Saja',
+    image: '/promos/promo-3.svg',
+    link: '/games',
+    originalImage: '/promos/promo-3.svg',
+  },
+]
+
 interface Banner {
   id: string
   title: string
@@ -31,6 +66,7 @@ export function PromoSection({ promos: propPromos }: PromoSectionProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isLoading, setIsLoading] = useState(!propPromos)
   const [isPaused, setIsPaused] = useState(false)
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!propPromos) {
@@ -41,15 +77,27 @@ export function PromoSection({ promos: propPromos }: PromoSectionProps) {
   const fetchBanners = async () => {
     try {
       const data = await api.getBanners()
-      setBanners(data || [])
+      if (data && data.length > 0) {
+        setBanners(data)
+      } else {
+        // Use default banners if no data from API
+        setBanners([])
+      }
     } catch (error) {
       console.error('Error fetching banners:', error)
+      // Use default banners on error
+      setBanners([])
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Use prop promos for backward compatibility, otherwise use banners from API
+  // Handle image load error
+  const handleImageError = (bannerId: string) => {
+    setImageErrors(prev => new Set(prev).add(bannerId))
+  }
+
+  // Use prop promos for backward compatibility, otherwise use banners from API or defaults
   const displayItems = useMemo(() => {
     if (propPromos && propPromos.length > 0) {
       return propPromos.map(p => ({
@@ -58,16 +106,22 @@ export function PromoSection({ promos: propPromos }: PromoSectionProps) {
         description: p.subtitle || p.description || '',
         image: p.image,
         link: p.link || '#',
+        originalImage: p.image,
       }))
     }
-    return banners.map(b => ({
-      id: b.id,
-      title: b.title,
-      description: b.subtitle || '',
-      image: b.image,
-      link: b.link || '#',
-    }))
-  }, [propPromos, banners])
+    if (banners.length > 0) {
+      return banners.map(b => ({
+        id: b.id,
+        title: b.title,
+        description: b.subtitle || '',
+        image: imageErrors.has(b.id) ? '/promos/promo-placeholder.svg' : b.image,
+        link: b.link || '#',
+        originalImage: b.image,
+      }))
+    }
+    // Use default banners
+    return DEFAULT_BANNERS
+  }, [propPromos, banners, imageErrors])
 
   // Auto-play carousel every 5 seconds
   useEffect(() => {
@@ -100,11 +154,11 @@ export function PromoSection({ promos: propPromos }: PromoSectionProps) {
             href={item.link}
             className="relative block overflow-hidden rounded-2xl group"
           >
-            <BannerContent item={item} />
+            <BannerContent item={item} onImageError={handleImageError} />
           </Link>
         ) : (
           <div className="relative overflow-hidden rounded-2xl group">
-            <BannerContent item={item} />
+            <BannerContent item={item} onImageError={handleImageError} />
           </div>
         )}
       </section>
@@ -129,10 +183,10 @@ export function PromoSection({ promos: propPromos }: PromoSectionProps) {
           >
             {displayItems[currentIndex].link && displayItems[currentIndex].link !== '#' ? (
               <Link href={displayItems[currentIndex].link} className="block">
-                <BannerContent item={displayItems[currentIndex]} />
+                <BannerContent item={displayItems[currentIndex]} onImageError={handleImageError} />
               </Link>
             ) : (
-              <BannerContent item={displayItems[currentIndex]} />
+              <BannerContent item={displayItems[currentIndex]} onImageError={handleImageError} />
             )}
           </motion.div>
         </AnimatePresence>
@@ -171,7 +225,19 @@ export function PromoSection({ promos: propPromos }: PromoSectionProps) {
   )
 }
 
-function BannerContent({ item }: { item: { title: string; description: string; image: string } }) {
+function BannerContent({
+  item,
+  onImageError,
+}: {
+  item: { id: string; title: string; description: string; image: string; originalImage?: string }
+  onImageError?: (id: string) => void
+}) {
+  const handleError = () => {
+    if (onImageError && item.originalImage) {
+      onImageError(item.id)
+    }
+  }
+
   return (
     <div className="relative h-40 md:h-56">
       <Image
@@ -179,6 +245,8 @@ function BannerContent({ item }: { item: { title: string; description: string; i
         alt={item.title}
         fill
         className="object-cover transition-transform duration-500 group-hover:scale-105"
+        onError={handleError}
+        unoptimized={item.image?.endsWith('.svg')}
       />
       <div className="absolute inset-0 bg-gradient-to-r from-dark-100/90 via-dark-100/70 to-dark-100/50" />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />

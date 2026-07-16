@@ -40,7 +40,7 @@ const CHECKOUT_STATE_KEY = 'topupkilat_checkout_state'
 function CheckoutContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { user, profile, isAuthenticated, isLoading: authLoading } = useAuth()
+  const { user, profile, isAuthenticated, isLoading: authLoading, session } = useAuth()
 
   const gameSlug = searchParams.get('game')
   const productId = searchParams.get('product')
@@ -129,20 +129,29 @@ function CheckoutContent() {
       // First check if we have saved state
       const savedState = loadCheckoutState()
 
+      // Only restore state if it's the SAME product and order is still valid
       if (savedState && savedState.gameSlug === gameSlug && savedState.productId === productId) {
-        // Restore state
-        console.log('Restoring checkout state from sessionStorage')
-        setStep(savedState.step)
-        setSelectedPayment(savedState.selectedPayment)
-        setInvoiceNo(savedState.invoiceNo)
-        setOrderId(savedState.orderId)
-        setPaymentId(savedState.paymentId)
-        setPaymentInstructions(savedState.paymentInstructions)
-        setInvoiceData(savedState.invoiceData)
-
-        // If was on confirmation step, start polling
-        if (savedState.step === 'confirmation' && savedState.paymentId) {
-          setStep('confirmation')
+        // Verify the saved order still exists in database
+        if (savedState.orderId) {
+          try {
+            const response = await fetch(`/api/payments/status?paymentId=${savedState.paymentId}`)
+            // If payment still exists and is pending, restore the state
+            // Otherwise, clear the old state
+            if (savedState.step === 'confirmation' && savedState.invoiceNo) {
+              // This is a valid in-progress checkout, restore it
+              console.log('Restoring checkout state from sessionStorage')
+              setStep(savedState.step)
+              setSelectedPayment(savedState.selectedPayment)
+              setInvoiceNo(savedState.invoiceNo)
+              setOrderId(savedState.orderId)
+              setPaymentId(savedState.paymentId)
+              setPaymentInstructions(savedState.paymentInstructions)
+              setInvoiceData(savedState.invoiceData)
+            }
+          } catch {
+            // Payment status check failed, don't restore old state
+            clearCheckoutState()
+          }
         }
       }
 
@@ -169,7 +178,7 @@ function CheckoutContent() {
     }
 
     fetchData()
-  }, [gameSlug, productId, loadCheckoutState])
+  }, [gameSlug, productId, loadCheckoutState, clearCheckoutState])
 
   // Determine initial step when auth is ready
   useEffect(() => {
@@ -273,7 +282,7 @@ function CheckoutContent() {
 
   const total = product.price
 
-  // Handle payment - USES API ROUTE
+  // Handle payment - USES API ROUTES
   const handleProcessPayment = async () => {
     if (!selectedPayment) {
       toast.error('Pilih metode pembayaran terlebih dahulu')
@@ -283,28 +292,44 @@ function CheckoutContent() {
     setIsProcessing(true)
 
     try {
-      // 1. Create order in Supabase
-      const order = await api.createOrder({
-        gameSlug: gameSlug!,
-        productId: productId!,
-        userGameId: userId!,
-        serverId: serverId || undefined,
-        voucherCode: voucherCode || undefined,
+      // 1. Create order via server-side API route
+      // SECURITY: All price calculations done server-side, client only sends identifiers
+      const orderResponse = await fetch('/api/orders/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // Pass auth token if user is logged in
+          ...(session ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({
+          gameSlug: gameSlug!,
+          productId: productId!,
+          userGameId: userId!,
+          serverId: serverId || undefined,
+          voucherCode: voucherCode || undefined,
+        }),
       })
 
-      console.log('Order created:', order)
+      const orderResult = await orderResponse.json()
+
+      if (!orderResult.success) {
+        throw new Error(orderResult.message || 'Failed to create order')
+      }
+
+      const orderData = orderResult.data
+      console.log('Order created via API:', orderData)
 
       // 2. Create payment via API route (server-side)
       // SECURITY: We only send orderId - server fetches actual price from database
       // DO NOT send amount from client - it will be ignored and calculated server-side
-      const response = await fetch('/api/payments/create', {
+      const paymentResponse = await fetch('/api/payments/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          orderId: order.id,
-          invoiceNo: order.invoice_no,
+          orderId: orderData.orderId,
+          invoiceNo: orderData.invoiceNo,
           method: selectedPayment,
           userName: profile?.name || user?.email || 'Customer',
           userEmail: profile?.email || user?.email || 'guest@topupkilat.com',
@@ -314,14 +339,14 @@ function CheckoutContent() {
         }),
       })
 
-      const result = await response.json()
+      const paymentResult = await paymentResponse.json()
 
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to create payment')
+      if (!paymentResult.success) {
+        throw new Error(paymentResult.message || 'Failed to create payment')
       }
 
-      const invoice = result.data
-      const paymentIdFromApi = result.paymentId // Get payment ID from response
+      const invoice = paymentResult.data
+      const paymentIdFromApi = paymentResult.paymentId // Get payment ID from response
       console.log('Payment created:', invoice, 'Payment ID:', paymentIdFromApi)
 
       // 3. Set payment instructions based on payment type
@@ -339,8 +364,8 @@ function CheckoutContent() {
       })
 
       // 4. Update state
-      setInvoiceNo(order.invoice_no)
-      setOrderId(order.id)
+      setInvoiceNo(orderData.invoiceNo)
+      setOrderId(orderData.orderId)
       if (paymentIdFromApi) {
         setPaymentId(paymentIdFromApi)
       }

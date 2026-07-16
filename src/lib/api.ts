@@ -25,17 +25,46 @@ class ApiClient {
 
     if (authError) throw new Error(authError.message);
 
-    // Create user profile
-    const { error: profileError } = await supabase.from('users').insert({
-      id: authData.user!.id,
-      email: data.email,
-      name: data.name,
-      phone: data.phone || null,
-    });
+    if (!authData.user) throw new Error('Registration failed');
 
-    if (profileError) throw new Error(profileError.message);
+    // Create user profile with retry logic
+    let profileError = null;
+    let retries = 0;
+    const maxRetries = 3;
 
-    return { user: authData.user, message: 'Registration successful' };
+    while (retries < maxRetries) {
+      const { error } = await supabase.from('users').insert({
+        id: authData.user!.id,
+        email: data.email,
+        name: data.name,
+        phone: data.phone || null,
+      });
+
+      if (!error) {
+        profileError = null;
+        break;
+      }
+
+      profileError = error;
+      retries++;
+
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    if (profileError) {
+      console.warn('Profile creation warning:', profileError.message);
+      // Don't throw - auth user is created, profile can be created later
+    }
+
+    // Get the created profile
+    const { data: profile } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', authData.user!.id)
+      .maybeSingle();
+
+    return { user: authData.user, profile, message: 'Registration successful' };
   }
 
   async login(data: { email: string; password: string }) {
@@ -46,12 +75,16 @@ class ApiClient {
 
     if (authError) throw new Error(authError.message);
 
-    // Get user profile
+    // Get user profile - use maybeSingle to avoid 406 error
     const { data: profile, error: profileError } = await supabase
       .from('users')
       .select('*')
       .eq('id', authData.user.id)
-      .single();
+      .maybeSingle();
+
+    if (profileError) {
+      console.warn('Profile fetch warning:', profileError.message);
+    }
 
     return {
       user: profile,
@@ -94,8 +127,9 @@ class ApiClient {
       .from('games')
       .select('*')
       .eq('slug', slug)
-      .single();
+      .maybeSingle();
     if (error) throw new Error(error.message);
+    if (!data) throw new Error('Game not found');
     return data;
   }
 
@@ -121,11 +155,16 @@ class ApiClient {
       .eq('is_active', true)
       .order('price');
     if (error) throw new Error(error.message);
-    return data;
+    return data || [];
   }
 
   // ==================== ORDERS ====================
 
+  /**
+   * @deprecated Use POST /api/orders/create instead
+   * This function is kept for backward compatibility but should not be used directly.
+   * All order creation should go through the server-side API route to ensure price integrity.
+   */
   async createOrder(data: {
     gameSlug: string;
     productId: string;
@@ -134,18 +173,18 @@ class ApiClient {
     voucherCode?: string;
   }) {
     // Get game and product
-    const { data: game } = await supabase.from('games').select('*').eq('slug', data.gameSlug).single();
+    const { data: game } = await supabase.from('games').select('*').eq('slug', data.gameSlug).maybeSingle();
     if (!game) throw new Error('Game not found');
 
-    const { data: product } = await supabase.from('game_products').select('*').eq('id', data.productId).single();
+    const { data: product } = await supabase.from('game_products').select('*').eq('id', data.productId).maybeSingle();
     if (!product) throw new Error('Product not found');
 
     // Generate invoice
     const invoiceNo = `TK${Date.now()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
-    // Get user ID if logged in
+    // Get user ID if logged in - use getSession which returns Promise
     const session = await this.getSession();
-    const userId = session?.user.id || null;
+    const userId = session?.user?.id || null;
 
     // Calculate total
     let subtotal = product.price;
@@ -160,7 +199,7 @@ class ApiClient {
         .eq('code', data.voucherCode.toUpperCase())
         .eq('is_active', true)
         .gt('usage_limit', 0)
-        .single();
+        .maybeSingle();
 
       if (voucher && (!voucher.expires_at || new Date(voucher.expires_at) > new Date())) {
         voucherId = voucher.id;
@@ -175,7 +214,7 @@ class ApiClient {
 
     const total = Math.max(0, subtotal - voucherDiscount);
 
-    // Create order
+    // Create order - use the supabase client directly to ensure proper auth context
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -195,7 +234,10 @@ class ApiClient {
       .select()
       .single();
 
-    if (orderError) throw new Error(orderError.message);
+    if (orderError) {
+      console.error('Order creation error:', orderError);
+      throw new Error(orderError.message);
+    }
 
     return order;
   }
@@ -479,8 +521,9 @@ class ApiClient {
     const session = await this.getSession();
     if (!session) throw new Error('Not authenticated');
 
-    const { data, error } = await supabase.from('users').select('*').eq('id', session.user.id).single();
+    const { data, error } = await supabase.from('users').select('*').eq('id', session.user.id).maybeSingle();
     if (error) throw new Error(error.message);
+    if (!data) throw new Error('Profile not found');
     return data;
   }
 
@@ -497,9 +540,13 @@ class ApiClient {
       })
       .eq('id', session.user.id)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('Update profile error:', error);
+      throw new Error(error.message);
+    }
+    if (!updated) throw new Error('Failed to update profile');
     return updated;
   }
 

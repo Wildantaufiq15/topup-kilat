@@ -20,6 +20,7 @@ import {
   notifyCustomerOrderSuccess,
 } from '@/lib/fonnte'
 import { verifyCallbackSignature } from '@/lib/sakurupiah'
+import { createTopup, checkTopupStatus } from '@/lib/digiflazz'
 
 // Initialize Supabase admin client (server-side)
 const supabaseAdmin = createClient(
@@ -44,6 +45,157 @@ interface SakurupiahCallback {
   email?: string
   phone?: string
   callback_url?: string
+}
+
+interface OrderData {
+  id: string
+  invoice_no: string
+  user_game_id: string
+  server_id: string | null
+  product: {
+    name: string
+  }
+  game: {
+    name: string
+    slug: string
+  }
+}
+
+interface FulfillmentResult {
+  success: boolean
+  ref_id?: string
+  rc?: string
+  message?: string
+  sn?: string
+}
+
+/**
+ * Process Digiflazz topup fulfillment
+ *
+ * Flow:
+ * 1. Get order details (buyer_sku_code, customer_no)
+ * 2. Generate unique ref_id for this transaction
+ * 3. Call Digiflazz API
+ * 4. Update order with fulfillment status
+ */
+async function processFulfillment(
+  orderData: OrderData,
+  paymentId: string,
+  requestId: string
+): Promise<FulfillmentResult> {
+  console.log(`[${requestId}] Processing fulfillment for order:`, orderData.id)
+
+  // Check if order already fulfilled
+  if (orderData.fulfillment_status === 'SUCCESS') {
+    console.log(`[${requestId}] Order already fulfilled, skipping...`)
+    return { success: true, ref_id: orderData.fulfillment_ref }
+  }
+
+  // Generate unique ref_id for Digiflazz
+  // Format: ORDER-{invoice_no}-{timestamp}
+  const refId = `ORD-${orderData.invoice_no}`
+
+  console.log(`[${requestId}] Fulfillment ref_id:`, refId)
+
+  // Map game slug to Digiflazz buyer_sku_code
+  // This needs to be configured in the game_products table
+  const buyerSkuCode = await getBuyerSkuCode(orderData.game.slug, orderData.product?.id)
+
+  if (!buyerSkuCode) {
+    console.error(`[${requestId}] No SKU code mapping found for game: ${orderData.game.slug}`)
+    return {
+      success: false,
+      message: 'SKU code not configured for this product',
+    }
+  }
+
+  console.log(`[${requestId}] SKU Code: ${buyerSkuCode}`)
+  console.log(`[${requestId}] Customer No: ${orderData.user_game_id}`)
+  console.log(`[${requestId}] Server: ${orderData.server_id || 'N/A'}`)
+
+  // Call Digiflazz API
+  try {
+    const digiflazzResponse = await createTopup({
+      buyer_sku_code: buyerSkuCode,
+      customer_no: orderData.user_game_id,
+      ref_id: refId,
+      testing: false, // Set to true for testing
+    })
+
+    console.log(`[${requestId}] Digiflazz response:`, digiflazzResponse)
+
+    // Determine status based on RC code
+    const isSuccess = digiflazzResponse.rc === '00' || digiflazzResponse.status === 'Sukses'
+    const isPending = digiflazzResponse.rc === '01' || digiflazzResponse.status === 'Pending'
+
+    // Update order with fulfillment info
+    await supabaseAdmin
+      .from('orders')
+      .update({
+        fulfillment_status: isSuccess ? 'SUCCESS' : isPending ? 'PENDING' : 'FAILED',
+        fulfillment_ref: refId,
+        fulfillment_rc: digiflazzResponse.rc,
+        fulfillment_message: digiflazzResponse.message,
+        fulfillment_sn: digiflazzResponse.sn || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', orderData.id)
+
+    // Update order status based on fulfillment
+    if (!isSuccess && !isPending) {
+      await supabaseAdmin
+        .from('orders')
+        .update({ status: 'FAILED' })
+        .eq('id', orderData.id)
+    }
+
+    return {
+      success: isSuccess,
+      ref_id: refId,
+      rc: digiflazzResponse.rc,
+      message: digiflazzResponse.message,
+      sn: digiflazzResponse.sn,
+    }
+  } catch (error: any) {
+    console.error(`[${requestId}] Digiflazz API error:`, error)
+
+    // Mark fulfillment as failed
+    await supabaseAdmin
+      .from('orders')
+      .update({
+        fulfillment_status: 'FAILED',
+        fulfillment_ref: refId,
+        fulfillment_message: error.message,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', orderData.id)
+
+    return {
+      success: false,
+      ref_id: refId,
+      message: error.message,
+    }
+  }
+}
+
+/**
+ * Map game slug + product name to Digiflazz buyer_sku_code
+ * Fetch from database game_products table
+ */
+async function getBuyerSkuCode(gameSlug: string, productId: string): Promise<string | null> {
+  // Fetch from database
+  const { data, error } = await supabaseAdmin
+    .from('game_products')
+    .select('buyer_sku_code')
+    .eq('id', productId)
+    .maybeSingle()
+
+  if (error) {
+    console.error('Error fetching SKU code:', error)
+    return null
+  }
+
+  return data?.buyer_sku_code || null
 }
 
 export async function POST(request: NextRequest) {
@@ -160,36 +312,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // If still not found, try to find by partial match in order invoice
-    if (!paymentData && merchant_ref) {
-      console.log(`[${requestId}] Trying to find by order invoice_no...`)
-      // merchant_ref format: TK-{orderId_prefix}-{timestamp}
-      // Extract potential order reference
-      const orderPrefix = merchant_ref.replace(/^TK-/, '').split('-')[0]
-
-      if (orderPrefix) {
-        // Find orders with matching invoice_no prefix
-        const { data: orders } = await supabaseAdmin
-          .from('orders')
-          .select('id')
-          .ilike('invoice_no', `%${orderPrefix}%`)
-          .limit(1)
-
-        if (orders && orders.length > 0) {
-          // Find payment for this order
-          const { data: paymentForOrder } = await supabaseAdmin
-            .from('payments')
-            .select('id, order_id')
-            .eq('order_id', orders[0].id)
-            .maybeSingle()
-
-          if (paymentForOrder) {
-            paymentData = paymentForOrder
-            console.log(`[${requestId}] Found payment by order prefix:`, paymentForOrder)
-          }
-        }
-      }
-    }
+    // NOTE: ILIKE fallback for invoice_no was removed because:
+    // 1. trx_id and merchant_ref lookups should always succeed for valid callbacks
+    // 2. ILIKE with leading wildcard cannot use B-tree index efficiently
+    // 3. Dead code increases maintenance burden
 
     if (!paymentData) {
       console.error(`[${requestId}] Payment not found for:`, { trx_id, merchant_ref })
@@ -293,10 +419,23 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // If payment successful, trigger supplier delivery (future)
+      // If payment successful, trigger supplier delivery
       if (status === 'berhasil') {
-        console.log(`[${requestId}] 🎉 Payment successful, order ready for processing!`)
-        // TODO: Trigger supplier API (Digiflazz) to deliver the product
+        console.log(`[${requestId}] 🎉 Payment successful, starting fulfillment...`)
+
+        // Trigger Digiflazz topup
+        try {
+          const fulfillmentResult = await processFulfillment(
+            orderData,
+            paymentId,
+            requestId
+          )
+          console.log(`[${requestId}] ✅ Fulfillment result:`, fulfillmentResult)
+        } catch (fulfillmentError: any) {
+          console.error(`[${requestId}] ❌ Fulfillment error:`, fulfillmentError.message)
+          // Don't fail the callback - payment is already processed
+          // Fulfillment can be retried via admin panel
+        }
       }
     }
 

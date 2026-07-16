@@ -14,7 +14,6 @@ import {
   Percent,
 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
 
@@ -51,13 +50,11 @@ export default function VouchersPage() {
   const fetchVouchers = async () => {
     setIsLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('vouchers')
-        .select('*')
-        .order('created_at', { ascending: false })
+      const response = await fetch('/api/admin/vouchers')
+      const result = await response.json()
 
-      if (error) throw error
-      setVouchers(data || [])
+      if (!result.success) throw new Error(result.message)
+      setVouchers(result.data || [])
     } catch (error) {
       console.error('Error fetching vouchers:', error)
     } finally {
@@ -68,40 +65,32 @@ export default function VouchersPage() {
   const handleSaveVoucher = async (voucherData: Partial<Voucher>) => {
     try {
       if (editingVoucher) {
-        const { error } = await supabase
-          .from('vouchers')
-          .update(voucherData)
-          .eq('id', editingVoucher.id)
-
-        if (error) throw error
+        // Update via API
+        const response = await fetch('/api/admin/vouchers', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: editingVoucher.id, ...voucherData }),
+        })
+        const result = await response.json()
+        if (!result.success) throw new Error(result.message)
         toast.success('Voucher berhasil diupdate')
       } else {
-        const { error } = await supabase
-          .from('vouchers')
-          .insert([{
-            code: voucherData.code?.toUpperCase(),
-            name: voucherData.name || voucherData.code,
-            type: voucherData.type || 'DISCOUNT',
-            discount_type: voucherData.discount_type === 'FIXED' ? 'FIXED' : 'PERCENTAGE',
-            discount_value: voucherData.discount_value,
-            min_transaction: voucherData.min_transaction || 0,
-            max_discount: voucherData.max_discount || null,
-            usage_limit: voucherData.usage_limit || null,
-            is_active: true,
-            used_quota: 0,
-            starts_at: voucherData.starts_at || new Date().toISOString(),
-            expires_at: voucherData.expires_at || null,
-          }])
-
-        if (error) throw error
+        // Create via API
+        const response = await fetch('/api/admin/vouchers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(voucherData),
+        })
+        const result = await response.json()
+        if (!result.success) throw new Error(result.message)
         toast.success('Voucher berhasil dibuat')
       }
-
+      await fetchVouchers()
       setShowModal(false)
       setEditingVoucher(null)
-      fetchVouchers()
-    } catch (error: any) {
-      toast.error(error.message || 'Gagal menyimpan voucher')
+    } catch (error) {
+      console.error('Error saving voucher:', error)
+      toast.error('Gagal menyimpan voucher')
     }
   }
 
@@ -109,31 +98,36 @@ export default function VouchersPage() {
     if (!confirm('Yakin ingin menghapus voucher ini?')) return
 
     try {
-      const { error } = await supabase
-        .from('vouchers')
-        .delete()
-        .eq('id', voucherId)
-
-      if (error) throw error
+      const response = await fetch(`/api/admin/vouchers?id=${voucherId}`, {
+        method: 'DELETE',
+      })
+      const result = await response.json()
+      if (!result.success) throw new Error(result.message)
       toast.success('Voucher berhasil dihapus')
       fetchVouchers()
-    } catch (error: any) {
-      toast.error(error.message || 'Gagal menghapus voucher')
+    } catch (error) {
+      console.error('Error deleting voucher:', error)
+      toast.error('Gagal menghapus voucher')
     }
   }
 
   const handleToggleActive = async (voucher: Voucher) => {
     try {
-      const { error } = await supabase
-        .from('vouchers')
-        .update({ is_active: !voucher.is_active })
-        .eq('id', voucher.id)
-
-      if (error) throw error
+      const response = await fetch('/api/admin/vouchers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: voucher.id,
+          is_active: !voucher.is_active,
+        }),
+      })
+      const result = await response.json()
+      if (!result.success) throw new Error(result.message)
       toast.success(`Voucher ${voucher.is_active ? 'dinonaktifkan' : 'diaktifkan'}`)
       fetchVouchers()
-    } catch (error: any) {
-      toast.error(error.message || 'Gagal update status')
+    } catch (error) {
+      console.error('Error toggling voucher:', error)
+      toast.error('Gagal update status')
     }
   }
 

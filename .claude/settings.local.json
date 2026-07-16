@@ -47,7 +47,23 @@
       "Bash(npx -y supabase-js-cli psql --project-id tzykgukfnmgjwvaebtnc -c \"SELECT id, name, price, is_active, game_id FROM public.game_products LIMIT 10;\")",
       "Bash(sed -i 's/createClient\\(supabaseUrl, anonKey\\)/createClient\\(supabaseUrl!, anonKey!\\)/g' scripts/test-rls-security.ts)",
       "Bash(sed -i 's/createClient\\(supabaseUrl, serviceKey\\)/createClient\\(supabaseUrl!, serviceKey!\\)/g' scripts/test-rls-security.ts)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(timeout 10)",
+      "Bash(powershell -Command \"npm run dev 2>&1 | Select-Object -First 50\")",
+      "Bash(cp pre-commit-hook.sh .git/hooks/pre-commit)",
+      "Bash(chmod +x .git/hooks/pre-commit)",
+      "PowerShell(cd E:\\\\Website\\\\TopupKilat; npx tsc --noEmit --skipLibCheck 2>&1 | Where-Object { $_ -notmatch '__tests__' } | Select-Object -First 30)",
+      "Bash(rm test-secret-temp.txt)",
+      "Bash(git reset *)",
+      "Bash(npx jest *)",
+      "Bash(Select-Object -Last 30)",
+      "WebFetch(domain:developer.digiflazz.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:devapps.fehrandpeers.com)",
+      "Bash(node *)",
+      "Bash(ssh *)",
+      "Bash(nslookup api.topupkilat.store 8.8.8.8)"
     ]
   }
 }

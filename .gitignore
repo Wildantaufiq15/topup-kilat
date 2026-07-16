@@ -51,9 +51,6 @@ coverage/
 *.tsbuildinfo
 next-env.d.ts
 
-# Prisma
-**/prisma/migrations/
-
 # Misc
 *.pem
 *.log
