@@ -94,7 +94,7 @@ async function processFulfillment(
   // Check if order already fulfilled
   if (orderData.fulfillment_status === 'SUCCESS') {
     console.log(`[${requestId}] Order already fulfilled, skipping...`)
-    return { success: true, ref_id: orderData.fulfillment_ref }
+    return { success: true, ref_id: orderData.fulfillment_ref || undefined }
   }
 
   // Generate unique ref_id for Digiflazz
