@@ -17,6 +17,7 @@ import { createClient } from '@supabase/supabase-js'
 import { createInvoice } from '@/lib/sakurupiah'
 import { notifyAdminNewOrder } from '@/lib/fonnte'
 import { paymentRateLimiter, getClientIP } from '@/lib/ratelimit'
+import { createPaymentSchema, parseWithMessages } from '@/lib/validations'
 
 // Server-side Supabase client (service role for bypassing RLS)
 const supabase = createClient(
@@ -30,19 +31,6 @@ const MAX_TRANSACTION_AMOUNT = 50000000 // Rp 50,000,000 maximum
 
 // Tolerance for price mismatch (to account for rounding)
 const PRICE_TOLERANCE = 100 // Rp 100
-
-interface CreatePaymentRequest {
-  orderId: string
-  invoiceNo?: string
-  method: string
-  // NOTE: We intentionally do NOT accept amount from client
-  // gameName, productName, amount are fetched from database
-  userName?: string
-  userEmail?: string
-  userPhone?: string
-  userGameId?: string
-  serverId?: string
-}
 
 // Voucher validation result
 interface ValidatedVoucher {
@@ -202,20 +190,21 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body: CreatePaymentRequest = await request.json()
-    const { orderId, method, userName, userEmail, userPhone } = body
+    const body = await request.json()
 
-    console.log(`[${requestId}] Payment creation request for order: ${orderId}`)
-
-    // =====================================================
-    // STEP 1: Validate required fields
-    // =====================================================
-    if (!orderId || !method) {
+    // Validate request body with Zod
+    const validation = parseWithMessages(createPaymentSchema, body)
+    if (!validation.success) {
+      console.log(`[${requestId}] Validation failed:`, validation.errors)
       return NextResponse.json(
-        { success: false, message: 'Missing required fields: orderId, method' },
+        { success: false, message: 'Validasi gagal', errors: validation.errors },
         { status: 400 }
       )
     }
+
+    const { orderId, method, userName, userEmail, userPhone } = validation.data
+
+    console.log(`[${requestId}] Payment creation request for order: ${orderId}`)
 
     // =====================================================
     // STEP 2: Fetch order from database (server-side)

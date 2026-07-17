@@ -13,14 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { paymentRateLimiter, getClientIP } from '@/lib/ratelimit'
-
-interface CreateOrderRequest {
-  gameSlug: string
-  productId: string
-  userGameId: string
-  serverId?: string
-  voucherCode?: string
-}
+import { createOrderSchema, parseWithMessages } from '@/lib/validations'
 
 // Voucher validation result
 interface ValidatedVoucher {
@@ -146,8 +139,19 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body: CreateOrderRequest = await request.json()
-    const { gameSlug, productId, userGameId, serverId, voucherCode } = body
+    const body = await request.json()
+
+    // Validate request body with Zod
+    const validation = parseWithMessages(createOrderSchema, body)
+    if (!validation.success) {
+      console.log(`[${requestId}] Validation failed:`, validation.errors)
+      return NextResponse.json(
+        { success: false, message: 'Validasi gagal', errors: validation.errors },
+        { status: 400 }
+      )
+    }
+
+    const { gameSlug, productId, userGameId, serverId, voucherCode } = validation.data
 
     console.log(`[${requestId}] Order creation request:`, {
       gameSlug,
@@ -155,16 +159,6 @@ export async function POST(request: NextRequest) {
       userGameId,
       hasVoucher: !!voucherCode,
     })
-
-    // =====================================================
-    // STEP 1: Validate required fields
-    // =====================================================
-    if (!gameSlug || !productId || !userGameId) {
-      return NextResponse.json(
-        { success: false, message: 'Missing required fields: gameSlug, productId, userGameId' },
-        { status: 400 }
-      )
-    }
 
     // =====================================================
     // STEP 2: Fetch game from database
