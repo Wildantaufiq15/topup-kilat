@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   Image as ImageIcon,
+  RefreshCw,
 } from 'lucide-react'
 import { AdminGuard } from '@/components/admin/AdminGuard'
 
@@ -35,6 +36,11 @@ const adminNavItems = [
     title: 'Produk',
     href: '/admin/products',
     icon: Package,
+  },
+  {
+    title: 'Digiflazz',
+    href: '/admin/digiflazz',
+    icon: RefreshCw,
   },
   {
     title: 'Banner',
