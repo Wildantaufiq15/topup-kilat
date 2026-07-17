@@ -63,7 +63,9 @@
       "WebFetch(domain:devapps.fehrandpeers.com)",
       "Bash(node *)",
       "Bash(ssh *)",
-      "Bash(nslookup api.topupkilat.store 8.8.8.8)"
+      "Bash(nslookup api.topupkilat.store 8.8.8.8)",
+      "Bash(ping *)",
+      "Bash(nslookup *)"
     ]
   }
 }

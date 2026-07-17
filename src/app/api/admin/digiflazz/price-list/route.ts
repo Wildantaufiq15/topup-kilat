@@ -28,13 +28,10 @@ export async function GET(request: NextRequest) {
       console.warn(`[${requestId}] Could not fetch balance:`, balanceError)
     }
 
-    // Fetch price list from Digiflazz
+    // Fetch price list from Digiflazz (fetch all, don't filter by game ID)
     let products: any[] = []
     try {
-      products = await getPriceList({
-        code: gameSlug || undefined,
-        category: category || undefined,
-      })
+      products = await getPriceList()
       console.log(`[${requestId}] Fetched ${products.length} products from Digiflazz`)
     } catch (apiError: any) {
       console.error(`[${requestId}] Digiflazz API Error:`, apiError.message)
