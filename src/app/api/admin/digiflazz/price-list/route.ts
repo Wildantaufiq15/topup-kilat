@@ -32,6 +32,22 @@ export async function GET(request: NextRequest) {
     let products: any[] = []
     try {
       products = await getPriceList()
+
+      // Handle different response formats
+      if (Array.isArray(products)) {
+        // Already an array
+      } else if (products && typeof products === 'object') {
+        // Might be wrapped in { data: [...] }
+        const productsObj = products as any
+        if (Array.isArray(productsObj.data)) {
+          products = productsObj.data
+        }
+      }
+
+      if (!Array.isArray(products)) {
+        throw new Error('Invalid response format from Digiflazz')
+      }
+
       console.log(`[${requestId}] Fetched ${products.length} products from Digiflazz`)
     } catch (apiError: any) {
       console.error(`[${requestId}] Digiflazz API Error:`, apiError.message)
