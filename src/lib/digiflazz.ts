@@ -161,11 +161,17 @@ export async function getPriceList(params?: {
 
   const response = await digiflazzRequest<DigiflazzProduct[]>('/', payload)
 
-  if (!response.data) {
-    throw new Error(response.message || 'Failed to get price list')
+  // Handle both array response and {data: [...]} response
+  let data: any = response?.data
+  if (Array.isArray(response)) {
+    data = response
   }
 
-  return response.data
+  if (!data) {
+    throw new Error(response?.message || 'Failed to get price list')
+  }
+
+  return data
 }
 
 /**
