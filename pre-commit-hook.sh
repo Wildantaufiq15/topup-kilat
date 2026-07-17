@@ -17,6 +17,8 @@ PATTERNS=(
 ALLOWED_FILES=(
     ".env.local"
     ".env"
+    "PROGRESS_REPORT.md"
+    "README.md"
 )
 
 # Get list of staged files

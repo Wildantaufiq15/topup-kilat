@@ -76,6 +76,57 @@ interface FulfillmentResult {
 }
 
 /**
+ * Check if callback was already processed (idempotency)
+ * Returns true if callback exists in log with same status
+ */
+async function isCallbackProcessed(
+  trxId: string,
+  status: string
+): Promise<{ processed: boolean; data?: any }> {
+  const { data, error } = await supabaseAdmin
+    .from('payment_callback_log')
+    .select('*')
+    .eq('trx_id', trxId)
+    .eq('status', status)
+    .maybeSingle()
+
+  if (error) {
+    console.error('Error checking callback log:', error)
+    return { processed: false }
+  }
+
+  return { processed: !!data, data }
+}
+
+/**
+ * Log processed callback to prevent duplicate processing
+ */
+async function logCallback(
+  trxId: string,
+  merchantRef: string | null,
+  eventType: string,
+  status: string,
+  rawPayload: object,
+  signature: string | null
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('payment_callback_log')
+    .insert({
+      trx_id: trxId,
+      merchant_ref: merchantRef,
+      event_type: eventType,
+      status: status,
+      raw_payload: rawPayload,
+      signature: signature,
+    })
+
+  if (error) {
+    console.error('Error logging callback:', error)
+    // Don't throw - logging failure shouldn't stop processing
+  }
+}
+
+/**
  * Process Digiflazz topup fulfillment
  *
  * Flow:
@@ -248,6 +299,20 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[${requestId}] ✅ Signature verified successfully`)
+
+    // IDEMPOTENCY CHECK: Skip if callback already processed with same status
+    if (trx_id) {
+      const { processed, data: existingLog } = await isCallbackProcessed(trx_id, status)
+      if (processed) {
+        console.log(`[${requestId}] ⏭️ Callback already processed (idempotent), skipping...`)
+        console.log(`[${requestId}] Existing log:`, existingLog)
+        return NextResponse.json({
+          success: true,
+          message: 'Callback already processed',
+          idempotent: true,
+        })
+      }
+    }
 
     // Only process payment_status events
     if (callbackEvent !== 'payment_status' && callbackEvent !== '') {
@@ -443,6 +508,19 @@ export async function POST(request: NextRequest) {
           // Fulfillment can be retried via admin panel
         }
       }
+    }
+
+    // LOG SUCCESS: Record callback to prevent duplicate processing
+    if (trx_id) {
+      await logCallback(
+        trx_id,
+        merchant_ref || null,
+        callbackEvent || 'payment_status',
+        status,
+        data,
+        signature || null
+      )
+      console.log(`[${requestId}] ✅ Callback logged for idempotency`)
     }
 
     console.log(`[${requestId}] === Callback processing complete ===`)
