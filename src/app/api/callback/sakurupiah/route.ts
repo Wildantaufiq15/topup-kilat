@@ -21,6 +21,7 @@ import {
 } from '@/lib/fonnte'
 import { verifyCallbackSignature } from '@/lib/sakurupiah'
 import { createTopup, checkTopupStatus } from '@/lib/digiflazz'
+import { callbackRateLimiter, getClientIP } from '@/lib/ratelimit'
 
 // Initialize Supabase admin client (server-side)
 const supabaseAdmin = createClient(
@@ -257,6 +258,27 @@ async function getBuyerSkuCode(gameSlug: string, productId: string): Promise<str
 
 export async function POST(request: NextRequest) {
   const requestId = `cb-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+
+  // Rate limiting check
+  if (callbackRateLimiter) {
+    const clientIP = getClientIP(request)
+    const { success, remaining, limit } = await callbackRateLimiter.limit(clientIP)
+
+    if (!success) {
+      console.log(`[${requestId}] Rate limit exceeded for IP:`, clientIP)
+      return NextResponse.json(
+        { error: 'Rate limit exceeded' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': String(limit),
+            'X-RateLimit-Remaining': String(remaining),
+            'Retry-After': '60',
+          },
+        }
+      )
+    }
+  }
 
   try {
     // Get raw body for signature verification

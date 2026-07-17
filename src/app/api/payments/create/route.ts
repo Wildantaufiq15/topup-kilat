@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createInvoice } from '@/lib/sakurupiah'
 import { notifyAdminNewOrder } from '@/lib/fonnte'
+import { paymentRateLimiter, getClientIP } from '@/lib/ratelimit'
 
 // Server-side Supabase client (service role for bypassing RLS)
 const supabase = createClient(
@@ -175,6 +176,30 @@ async function validateVoucherFromDatabase(
 
 export async function POST(request: NextRequest) {
   const requestId = `pay-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+
+  // Rate limiting check
+  if (paymentRateLimiter) {
+    const clientIP = getClientIP(request)
+    const { success, remaining, limit } = await paymentRateLimiter.limit(clientIP)
+
+    if (!success) {
+      console.log(`[${requestId}] Rate limit exceeded for IP:`, clientIP)
+      return NextResponse.json(
+        {
+          error: 'Terlalu banyak request. Silakan coba lagi dalam beberapa menit.',
+          retryAfter: 60,
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': String(limit),
+            'X-RateLimit-Remaining': String(remaining),
+            'Retry-After': '60',
+          },
+        }
+      )
+    }
+  }
 
   try {
     const body: CreatePaymentRequest = await request.json()
