@@ -11,7 +11,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdminAdmin } from '@/lib/supabaseAdmin-admin'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 interface CreateOrderRequest {
   gameSlug: string
@@ -63,7 +63,7 @@ async function validateVoucher(
   subtotal: number
 ): Promise<ValidatedVoucher | null> {
   // Fetch voucher from database
-  const { data: voucher, error } = await supabaseAdminAdmin
+  const { data: voucher, error } = await supabaseAdmin
     .from('vouchers')
     .select('*')
     .eq('code', voucherCode.toUpperCase())
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
 
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.slice(7)
-      const { data: { user }, error: authError } = await supabaseAdminAdmin.auth.getUser(token)
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
 
       if (!authError && user) {
         userId = user.id
@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
     // STEP 8: Increment voucher usage if applied
     // =====================================================
     if (voucherId) {
-      const { error: updateError } = await supabaseAdminAdmin.rpc('increment_voucher_usage', {
+      const { error: updateError } = await supabaseAdmin.rpc('increment_voucher_usage', {
         voucher_id: voucherId,
       })
 
