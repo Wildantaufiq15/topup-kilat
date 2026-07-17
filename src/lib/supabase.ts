@@ -1,9 +1,49 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+// Lazy initialization to avoid build-time errors
+let supabaseInstance: SupabaseClient | null = null
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+function getSupabaseClient(): SupabaseClient {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  // Return mock during build time if env vars are missing
+  if (!supabaseUrl || !supabaseAnonKey) {
+    if (!supabaseInstance) {
+      supabaseInstance = createClient(
+        'https://placeholder.supabase.co',
+        'placeholder-key',
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        }
+      )
+    }
+    return supabaseInstance
+  }
+
+  // Runtime: create real client
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+      },
+    })
+  }
+
+  return supabaseInstance
+}
+
+export const supabase = {
+  from: (table: string) => getSupabaseClient().from(table),
+  auth: getSupabaseClient().auth,
+  channel: (name: string) => getSupabaseClient().channel(name),
+  removeChannel: (channel: any) => getSupabaseClient().removeChannel(channel),
+  storage: getSupabaseClient().storage,
+}
 
 // Helper types
 export type Database = {
