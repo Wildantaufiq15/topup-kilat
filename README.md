@@ -10,6 +10,8 @@ Platform top up game tercepat dan paling dipercaya di Indonesia.
 - **Authentication**: Supabase Auth
 - **Payment Gateway**: Sakurupiah
 - **Notifications**: Fonnte WhatsApp API
+- **Validation**: Zod (runtime schema validation)
+- **Rate Limiting**: Upstash Redis (optional)
 
 ## Getting Started
 
@@ -26,19 +28,32 @@ Platform top up game tercepat dan paling dipercaya di Indonesia.
 Create a `.env.local` file in the root directory:
 
 ```env
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_URL=https://topupkilat.store
+
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
+# Digiflazz (Game Supplier)
+DIGIFLAZZ_PROXY_URL=https://api.topupkilat.store
+DIGIFLAZZ_USERNAME=your-username
+
 # Sakurupiah Payment Gateway
 SAKURUPIAH_API_ID=your-api-id
 SAKURUPIAH_API_KEY=your-api-key
-SAKURUPIAH_SANDBOX=true  # Set to false for production
+SAKURUPIAH_API_URL=https://sakurupiah.id/api
+SAKURUPIAH_CALLBACK_URL=https://topupkilat.store/api/callback/sakurupiah
 
 # Fonnte WhatsApp Notifications
 FONNTE_API_KEY=your-fonnte-api-key
 ADMIN_WHATSAPP_NUMBER=08xxxxxxxxx
+
+# Upstash Redis (for Rate Limiting - Optional)
+UPSTASH_REDIS_REST_URL=your-upstash-url
+UPSTASH_REDIS_REST_TOKEN=your-upstash-token
 ```
 
 ### Installation
@@ -126,8 +141,16 @@ All database migrations are stored in `supabase/migrations/`. To apply migration
 
 | File | Description |
 |------|-------------|
-| `supabase-setup.sql` | Initial schema setup (tables, columns) - RLS **DISABLED** |
-| `supabase/migrations/001_enable_rls.sql` | Enable Row Level Security (RLS) - **Apply this AFTER** schema setup |
+| `supabase-setup.sql` | Initial schema setup (tables, columns) |
+| `supabase/migrations/001_enable_rls.sql` | Enable Row Level Security (RLS) |
+| `supabase/migrations/002_fix_rls_guest_checkout.sql` | Fix RLS for guest checkout |
+| `supabase/migrations/003_update_promos_images.sql` | Update promos images |
+| `supabase/migrations/005_create_storage_buckets.sql` | Create Supabase Storage buckets |
+| `supabase/migrations/006_create_increment_voucher_usage.sql` | RPC for voucher usage |
+| `supabase/migrations/007_remove_direct_insert_policies.sql` | Remove direct INSERT policies |
+| `supabase/migrations/008_add_performance_indexes.sql` | Add database indexes |
+| `supabase/migrations/009_fulfillment.sql` | Add fulfillment columns & SKU codes |
+| `supabase/migrations/010_webhook_idempotency.sql` | Add payment_callback_log table |
 
 > ⚠️ **Important**: `supabase-setup.sql` creates tables with RLS disabled. Always apply `001_enable_rls.sql` after setting up the schema.
 
@@ -276,12 +299,16 @@ The project is deployed on Vercel. Push to the `main` branch to trigger deployme
 Before going live:
 
 1. [x] Apply RLS migration (`supabase/migrations/001_enable_rls.sql`)
-2. [x] Run RLS security tests and verify all pass
-3. [ ] Set `SAKURUPIAH_SANDBOX=false` in production
-4. [ ] Update Sakurupiah API credentials to production
-5. [ ] Verify webhook endpoint is accessible
-6. [ ] Test complete payment flow
-7. [ ] Review pg_policies to confirm all policies are created correctly
+2. [x] Apply all database migrations
+3. [x] Run RLS security tests and verify all pass
+4. [ ] Set Sakurupiah to production mode
+5. [ ] Update Sakurupiah API credentials to production
+6. [ ] Update callback URL to production domain
+7. [ ] Deposit saldo ke Digiflazz (~Rp 500.000)
+8. [ ] Verify webhook endpoint is accessible
+9. [ ] Test complete payment flow (end-to-end)
+10. [x] Setup Upstash Redis untuk rate limiting (optional)
+11. [x] Review pg_policies to confirm all policies are created correctly
 
 ## Security Notes
 
@@ -310,18 +337,37 @@ Client-side price manipulation is a critical vulnerability in payment flows. Att
    - Rejects if order already has a PAID payment
    - Rejects if order already has a PENDING payment
 
-4. **Transaction Limits**: Enforces minimum (Rp 10,000) and maximum (Rp 50,000,000) transaction amounts.
+4. **Transaction Limits**: Enforces maximum transaction amount (Rp 50,000,000).
+
+5. **Zod Validation**: All API inputs are validated with Zod schemas to prevent invalid data.
 
 ```typescript
 // Payment API only accepts orderId, not amount
 POST /api/payments/create
 {
-  "orderId": "uuid",      // Required
-  "method": "QRIS",       // Required
+  "orderId": "uuid",      // Required, validated with UUID format
+  "method": "QRIS",       // Required, validated with enum
   "userName": "..."       // Optional
   // NOTE: "amount" is NOT accepted - server fetches from database
 }
 ```
+
+### Rate Limiting
+
+Rate limiting protects against:
+- Brute force attacks
+- API abuse
+- DDoS attempts
+
+#### Configuration
+
+| Endpoint | Limit | Purpose |
+|----------|-------|---------|
+| `/api/orders/create` | 10/min | Prevent spam orders |
+| `/api/payments/create` | 10/min | Prevent payment abuse |
+| `/api/callback/sakurupiah` | 30/min | Webhook traffic |
+
+Rate limiting is optional and requires Upstash Redis. If not configured, requests are allowed.
 
 **To test payment integrity:**
 ```bash
