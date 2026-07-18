@@ -210,11 +210,18 @@ export default function ProductsPage() {
 
   const handleSaveProduct = async (productData: Partial<Product>) => {
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       if (editingProduct) {
         // Update existing product via API (bypass RLS)
         const response = await fetch(`/api/admin/products/${editingProduct.id}`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({
             name: productData.name,
             price: productData.price,
@@ -235,7 +242,7 @@ export default function ProductsPage() {
         // Create new product via API (bypass RLS)
         const response = await fetch('/api/admin/products', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({
             gameId: selectedGame!.id,
             name: productData.name,
@@ -265,8 +272,14 @@ export default function ProductsPage() {
     if (!confirm('Yakin ingin menghapus produk ini?')) return
 
     try {
+      const headers: HeadersInit = {}
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch(`/api/admin/products/${productId}`, {
         method: 'DELETE',
+        headers,
       })
       const result = await response.json()
 
@@ -281,9 +294,16 @@ export default function ProductsPage() {
   // Toggle best seller status
   const handleToggleBestSeller = async (product: Product) => {
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch(`/api/admin/products/${product.id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ isBestSeller: !product.is_best_seller }),
       })
       const result = await response.json()
@@ -614,9 +634,16 @@ export default function ProductsPage() {
                         <button
                           onClick={async () => {
                             try {
+                              const headers: HeadersInit = {
+                                'Content-Type': 'application/json',
+                              }
+                              if (session?.access_token) {
+                                headers['Authorization'] = `Bearer ${session.access_token}`
+                              }
+
                               const response = await fetch(`/api/admin/products/${product.id}`, {
                                 method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers,
                                 body: JSON.stringify({ isActive: !product.is_active }),
                               })
                               const result = await response.json()
