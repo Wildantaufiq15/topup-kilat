@@ -14,6 +14,17 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  // Handle Node.js modules that might be imported on client
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Don't bundle Node.js modules on client side
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        crypto: false,
+      }
+    }
+    return config
+  },
 }
 
 export default nextConfig

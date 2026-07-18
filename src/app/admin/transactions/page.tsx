@@ -16,6 +16,7 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext'
 
 interface Order {
   id: string
@@ -34,28 +35,46 @@ interface Order {
 type StatusFilter = 'ALL' | 'PENDING' | 'PAID' | 'SUCCESS' | 'FAILED' | 'EXPIRED'
 
 export default function TransactionsPage() {
+  const { session } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const itemsPerPage = 20
 
   useEffect(() => {
     fetchOrders()
-  }, [])
+  }, [session])
 
   const fetchOrders = async () => {
     setIsLoading(true)
+    setFetchError(null)
     try {
-      const response = await fetch('/api/admin/orders')
+      const headers: HeadersInit = {}
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
+      const response = await fetch('/api/admin/orders', { headers })
       const result = await response.json()
 
-      if (!result.success) throw new Error(result.message)
+      if (!result.success) {
+        // Don't throw for auth errors - just show empty state
+        if (response.status === 401 || response.status === 403) {
+          setFetchError('Tidak memiliki akses ke data transaksi')
+          setOrders([])
+          return
+        }
+        throw new Error(result.message || 'Gagal memuat data')
+      }
       setOrders(result.data || [])
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching orders:', error)
+      setFetchError(error.message || 'Terjadi kesalahan')
+      setOrders([])
     } finally {
       setIsLoading(false)
     }
@@ -202,6 +221,21 @@ export default function TransactionsPage() {
                   <td colSpan={7} className="px-4 py-12 text-center text-white/50">
                     <RefreshCw size={24} className="animate-spin mx-auto mb-2" />
                     Memuat data...
+                  </td>
+                </tr>
+              ) : fetchError ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center">
+                    <div className="text-red-400 mb-2">
+                      <AlertCircle size={24} className="mx-auto" />
+                    </div>
+                    <p className="text-white/50">{fetchError}</p>
+                    <button
+                      onClick={fetchOrders}
+                      className="mt-2 text-sm text-primary-400 hover:text-primary-300"
+                    >
+                      Coba lagi
+                    </button>
                   </td>
                 </tr>
               ) : paginatedOrders.length === 0 ? (

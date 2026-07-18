@@ -16,6 +16,7 @@ import {
   Image as ImageIcon,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext'
 
 interface Stats {
   totalOrders: number
@@ -29,6 +30,7 @@ interface Stats {
 }
 
 export default function AdminOverview() {
+  const { session } = useAuth()
   const [stats, setStats] = useState<Stats>({
     totalOrders: 0,
     totalRevenue: 0,
@@ -40,19 +42,32 @@ export default function AdminOverview() {
     topProducts: [],
   })
   const [isLoading, setIsLoading] = useState(true)
+  const [statsError, setStatsError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchStats()
-  }, [])
+  }, [session])
 
   const fetchStats = async () => {
     setIsLoading(true)
+    setStatsError(null)
     try {
-      // Fetch all orders via API
-      const response = await fetch('/api/admin/orders')
+      // Fetch all orders via API with auth
+      const headers: HeadersInit = {}
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
+      const response = await fetch('/api/admin/orders', { headers })
       const result = await response.json()
 
-      if (!result.success) throw new Error(result.message)
+      if (!result.success) {
+        if (response.status === 401 || response.status === 403) {
+          setStatsError('Tidak memiliki akses ke data')
+          return
+        }
+        throw new Error(result.message || 'Gagal memuat data')
+      }
       const orders = result.data || []
 
       // Calculate stats
@@ -104,8 +119,9 @@ export default function AdminOverview() {
         recentOrders: orders?.slice(0, 10) || [],
         topProducts,
       })
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching stats:', error)
+      setStatsError(error.message || 'Terjadi kesalahan')
     } finally {
       setIsLoading(false)
     }

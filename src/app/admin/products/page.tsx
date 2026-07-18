@@ -18,12 +18,14 @@ import {
   EyeOff,
   ImagePlus,
   Trophy,
+  Award,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
 import { ImageUploader } from '@/components/ui/ImageUploader'
+import { useAuth } from '@/context/AuthContext'
 
 interface Game {
   id: string
@@ -46,14 +48,18 @@ interface Product {
   name: string
   price: number
   price_base: number | null
-  supplier_code: string | null
+  price_display: number | null
+  buyer_sku_code: string | null
+  stock: string | null
   is_active: boolean
+  is_best_seller: boolean
   sort_order: number
   created_at: string
   game?: Game
 }
 
 export default function ProductsPage() {
+  const { session } = useAuth()
   const [games, setGames] = useState<Game[]>([])
   const [selectedGame, setSelectedGame] = useState<Game | null>(null)
   const [products, setProducts] = useState<Product[]>([])
@@ -63,10 +69,11 @@ export default function ProductsPage() {
   const [showProductModal, setShowProductModal] = useState(false)
   const [editingGame, setEditingGame] = useState<Game | null>(null)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchGames()
-  }, [])
+  }, [session])
 
   useEffect(() => {
     if (selectedGame) {
@@ -76,18 +83,31 @@ export default function ProductsPage() {
 
   const fetchGames = async () => {
     setIsLoading(true)
+    setFetchError(null)
     try {
-      const response = await fetch('/api/admin/games')
+      const headers: HeadersInit = {}
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
+      const response = await fetch('/api/admin/games', { headers })
       const result = await response.json()
 
-      if (!result.success) throw new Error(result.message)
+      if (!result.success) {
+        if (response.status === 401 || response.status === 403) {
+          setFetchError('Tidak memiliki akses ke data produk')
+          return
+        }
+        throw new Error(result.message || 'Gagal memuat data')
+      }
       const data = result.data || []
       setGames(data)
       if (data.length > 0 && !selectedGame) {
         setSelectedGame(data[0])
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching games:', error)
+      setFetchError(error.message || 'Terjadi kesalahan')
     } finally {
       setIsLoading(false)
     }
@@ -95,8 +115,13 @@ export default function ProductsPage() {
 
   const fetchProducts = async (gameId: string) => {
     try {
-      // Fetch products from API
-      const response = await fetch(`/api/admin/games/${gameId}/products`)
+      // Fetch products from API with auth
+      const headers: HeadersInit = {}
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
+      const response = await fetch(`/api/admin/games/${gameId}/products`, { headers })
       const result = await response.json()
 
       if (!result.success) throw new Error(result.message)
@@ -186,26 +211,45 @@ export default function ProductsPage() {
   const handleSaveProduct = async (productData: Partial<Product>) => {
     try {
       if (editingProduct) {
-        // Update existing product
-        const { error } = await supabase
-          .from('game_products')
-          .update(productData)
-          .eq('id', editingProduct.id)
+        // Update existing product via API (bypass RLS)
+        const response = await fetch(`/api/admin/products/${editingProduct.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: productData.name,
+            price: productData.price,
+            priceBase: productData.price_base,
+            priceDisplay: productData.price_display,
+            buyerSkuCode: productData.buyer_sku_code,
+            stock: productData.stock,
+            isActive: productData.is_active,
+            isBestSeller: productData.is_best_seller,
+            sortOrder: productData.sort_order,
+          }),
+        })
+        const result = await response.json()
 
-        if (error) throw error
+        if (!result.success) throw new Error(result.message)
         toast.success('Produk berhasil diupdate')
       } else {
-        // Create new product
-        const { error } = await supabase
-          .from('game_products')
-          .insert([{
-            ...productData,
-            game_id: selectedGame!.id,
-            is_active: true,
-            sort_order: products.length + 1,
-          }])
+        // Create new product via API (bypass RLS)
+        const response = await fetch('/api/admin/products', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gameId: selectedGame!.id,
+            name: productData.name,
+            price: productData.price,
+            priceBase: productData.price_base,
+            priceDisplay: productData.price_display,
+            buyerSkuCode: productData.buyer_sku_code,
+            stock: productData.stock || 'READY',
+            sortOrder: products.length + 1,
+          }),
+        })
+        const result = await response.json()
 
-        if (error) throw error
+        if (!result.success) throw new Error(result.message)
         toast.success('Produk berhasil dibuat')
       }
 
@@ -221,16 +265,34 @@ export default function ProductsPage() {
     if (!confirm('Yakin ingin menghapus produk ini?')) return
 
     try {
-      const { error } = await supabase
-        .from('game_products')
-        .delete()
-        .eq('id', productId)
+      const response = await fetch(`/api/admin/products/${productId}`, {
+        method: 'DELETE',
+      })
+      const result = await response.json()
 
-      if (error) throw error
+      if (!result.success) throw new Error(result.message)
       toast.success('Produk berhasil dihapus')
       if (selectedGame) fetchProducts(selectedGame.id)
     } catch (error: any) {
       toast.error(error.message || 'Gagal menghapus produk')
+    }
+  }
+
+  // Toggle best seller status
+  const handleToggleBestSeller = async (product: Product) => {
+    try {
+      const response = await fetch(`/api/admin/products/${product.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isBestSeller: !product.is_best_seller }),
+      })
+      const result = await response.json()
+
+      if (!result.success) throw new Error(result.message)
+      toast.success(product.is_best_seller ? 'Produk dihapus dari best seller' : 'Produk ditambahkan ke best seller')
+      if (selectedGame) fetchProducts(selectedGame.id)
+    } catch (error: any) {
+      toast.error(error.message || 'Gagal update best seller')
     }
   }
 
@@ -484,7 +546,9 @@ export default function ProductsPage() {
                   <th className="px-4 py-3 text-left text-xs text-white/50 font-medium">Nama</th>
                   <th className="px-4 py-3 text-left text-xs text-white/50 font-medium">Harga Jual</th>
                   <th className="px-4 py-3 text-left text-xs text-white/50 font-medium">Harga Modal</th>
-                  <th className="px-4 py-3 text-left text-xs text-white/50 font-medium">Kode Supplier</th>
+                  <th className="px-4 py-3 text-left text-xs text-white/50 font-medium">SKU Digiflazz</th>
+                  <th className="px-4 py-3 text-left text-xs text-white/50 font-medium">Stock</th>
+                  <th className="px-4 py-3 text-left text-xs text-white/50 font-medium">Best Seller</th>
                   <th className="px-4 py-3 text-left text-xs text-white/50 font-medium">Status</th>
                   <th className="px-4 py-3 text-left text-xs text-white/50 font-medium">Aksi</th>
                 </tr>
@@ -492,7 +556,7 @@ export default function ProductsPage() {
               <tbody>
                 {filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-white/50">
+                    <td colSpan={8} className="px-4 py-8 text-center text-white/50">
                       {search ? 'Produk tidak ditemukan' : 'Belum ada produk. Tambahkan produk baru.'}
                     </td>
                   </tr>
@@ -516,18 +580,52 @@ export default function ProductsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm text-white/50 font-mono">
-                          {product.supplier_code || '-'}
+                        <span className={`text-sm font-mono ${
+                          product.buyer_sku_code ? 'text-green-400' : 'text-white/50'
+                        }`}>
+                          {product.buyer_sku_code || 'Belum ada'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          product.stock === 'READY' || product.stock === 'ready'
+                            ? 'bg-green-500/20 text-green-400'
+                            : product.stock
+                            ? 'bg-yellow-500/20 text-yellow-400'
+                            : 'bg-white/10 text-white/50'
+                        }`}>
+                          {product.stock || 'Unknown'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <button
-                          onClick={() => {
-                            const updated = products.map(p =>
-                              p.id === product.id ? { ...p, is_active: !p.is_active } : p
-                            )
-                            setProducts(updated)
-                            supabase.from('game_products').update({ is_active: !product.is_active }).eq('id', product.id)
+                          onClick={() => handleToggleBestSeller(product)}
+                          className={`p-2 rounded-lg transition-all ${
+                            product.is_best_seller
+                              ? 'text-yellow-400 bg-yellow-500/20 hover:bg-yellow-500/30'
+                              : 'text-white/30 hover:text-yellow-400 hover:bg-yellow-500/10'
+                          }`}
+                          title={product.is_best_seller ? 'Klik untuk hapus dari best seller' : 'Klik untuk jadi best seller'}
+                        >
+                          <Award size={18} fill={product.is_best_seller ? 'currentColor' : 'none'} />
+                        </button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(`/api/admin/products/${product.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ isActive: !product.is_active }),
+                              })
+                              const result = await response.json()
+                              if (!result.success) throw new Error(result.message)
+                              toast.success(`Produk ${product.is_active ? 'dinonaktifkan' : 'diaktifkan'}`)
+                              if (selectedGame) fetchProducts(selectedGame.id)
+                            } catch (error: any) {
+                              toast.error(error.message || 'Gagal update status')
+                            }
                           }}
                           className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${
                             product.is_active
@@ -958,7 +1056,10 @@ function ProductModal({
     name: product?.name || '',
     price: product?.price?.toString() || '',
     price_base: product?.price_base?.toString() || '',
-    supplier_code: product?.supplier_code || '',
+    price_display: product?.price_display?.toString() || '',
+    buyer_sku_code: product?.buyer_sku_code || '',
+    stock: product?.stock || 'READY',
+    is_best_seller: product?.is_best_seller || false,
     sort_order: product?.sort_order || 1,
   })
 
@@ -982,35 +1083,81 @@ function ProductModal({
               placeholder="86 Diamonds"
             />
           </div>
-          <div>
-            <label className="block text-sm text-white/70 mb-1">Harga Jual (Rp)</label>
-            <input
-              type="number"
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: e.target.value })}
-              className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-500"
-              placeholder="15000"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-white/70 mb-1">Harga Jual (Rp)</label>
+              <input
+                type="number"
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
+                className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                placeholder="15000"
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-white/70 mb-1">Harga Modal (Rp)</label>
+              <input
+                type="number"
+                value={form.price_base}
+                onChange={(e) => setForm({ ...form, price_base: e.target.value })}
+                className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-500"
+                placeholder="12000"
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-sm text-white/70 mb-1">Harga Modal (Rp)</label>
-            <input
-              type="number"
-              value={form.price_base}
-              onChange={(e) => setForm({ ...form, price_base: e.target.value })}
-              className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-500"
-              placeholder="12000"
-            />
-          </div>
-          <div>
-            <label className="block text-sm text-white/70 mb-1">Kode Supplier (Digiflazz)</label>
+            <label className="block text-sm text-white/70 mb-1">Kode SKU Digiflazz</label>
             <input
               type="text"
-              value={form.supplier_code}
-              onChange={(e) => setForm({ ...form, supplier_code: e.target.value })}
+              value={form.buyer_sku_code}
+              onChange={(e) => setForm({ ...form, buyer_sku_code: e.target.value })}
               className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white font-mono text-sm focus:outline-none focus:border-primary-500"
-              placeholder="ML-86"
+              placeholder="ML86 (kode dari Digiflazz)"
             />
+            <p className="text-xs text-white/40 mt-1">Kode ini dari Digiflazz. Klik "Ambil Produk" untuk dapat kode yang benar.</p>
+          </div>
+
+          {/* Harga Display (Harga Coret) */}
+          <div>
+            <label className="block text-sm text-white/70 mb-1">Harga Display / Coret (Rp)</label>
+            <input
+              type="number"
+              value={form.price_display}
+              onChange={(e) => setForm({ ...form, price_display: e.target.value })}
+              className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-500"
+              placeholder="5000 (kosongkan jika tidak ada diskon)"
+            />
+            <p className="text-xs text-white/40 mt-1">Harga yang akan dicoret. Kosongkan jika tidak ada diskon.</p>
+          </div>
+
+          <div>
+            <label className="block text-sm text-white/70 mb-1">Stock Status</label>
+            <select
+              value={form.stock}
+              onChange={(e) => setForm({ ...form, stock: e.target.value })}
+              className="w-full px-3 py-2 bg-dark-100 border border-white/10 rounded-lg text-white focus:outline-none focus:border-primary-500"
+            >
+              <option value="READY">READY - Tersedia</option>
+              <option value="UNAVAILABLE">UNAVAILABLE - Tidak Tersedia</option>
+              <option value="CHECK">CHECK - Perlu Cek</option>
+            </select>
+          </div>
+
+          {/* Best Seller Toggle */}
+          <div
+            onClick={() => setForm({ ...form, is_best_seller: !form.is_best_seller })}
+            className="flex items-center justify-between px-4 py-3 bg-dark-100 rounded-lg cursor-pointer hover:bg-white/5 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Award size={18} className={form.is_best_seller ? 'text-yellow-400' : 'text-white/40'} />
+              <div>
+                <span className="text-sm text-white">Best Seller</span>
+                <p className="text-xs text-white/40">Tampil di bagian produk populer</p>
+              </div>
+            </div>
+            <div className={`w-10 h-6 rounded-full transition-colors ${form.is_best_seller ? 'bg-yellow-500' : 'bg-white/10'}`}>
+              <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${form.is_best_seller ? 'translate-x-5' : 'translate-x-0.5'} mt-0.5`} />
+            </div>
           </div>
         </div>
         <div className="p-4 border-t border-white/5 flex items-center justify-between">
@@ -1030,7 +1177,10 @@ function ProductModal({
                 name: form.name,
                 price: parseInt(form.price),
                 price_base: form.price_base ? parseInt(form.price_base) : null,
-                supplier_code: form.supplier_code || null,
+                price_display: form.price_display ? parseInt(form.price_display) : null,
+                buyer_sku_code: form.buyer_sku_code || null,
+                stock: form.stock,
+                is_best_seller: form.is_best_seller,
                 sort_order: form.sort_order,
               })}
               disabled={!form.name || !form.price}

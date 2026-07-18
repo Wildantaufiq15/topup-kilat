@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { api } from '@/lib/api'
+import { useAuth } from '@/context/AuthContext'
 
 interface DigiflazzProduct {
   sku_code: string
@@ -26,6 +27,7 @@ interface Game {
 }
 
 export default function DigiflazzSyncPage() {
+  const { session } = useAuth()
   const [games, setGames] = useState<Game[]>([])
   const [selectedGame, setSelectedGame] = useState<string>('')
   const [products, setProducts] = useState<DigiflazzProduct[]>([])
@@ -42,12 +44,27 @@ export default function DigiflazzSyncPage() {
   // Fetch games
   useEffect(() => {
     fetchGames()
-  }, [])
+  }, [session])
 
   async function fetchGames() {
     try {
-      const gamesData = await api.getGames()
-      setGames(gamesData || [])
+      // Build headers with auth token
+      const headers: HeadersInit = {}
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
+      // Use admin API to get all games including inactive
+      const response = await fetch('/api/admin/games?includeInactive=true', { headers })
+      const result = await response.json()
+
+      if (result.success) {
+        setGames(result.data || [])
+      } else {
+        // Fallback to public API
+        const gamesData = await api.getGames()
+        setGames(gamesData || [])
+      }
     } catch (err: any) {
       console.error('Error fetching games:', err)
     }
@@ -64,22 +81,41 @@ export default function DigiflazzSyncPage() {
     setMessage(null)
 
     try {
+      // Build headers with auth token
+      const headers: HeadersInit = {}
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch(
-        `/api/admin/digiflazz/price-list?game=${selectedGame}`
+        `/api/admin/digiflazz/price-list?game=${selectedGame}`,
+        { headers }
       )
       const data = await response.json()
 
       if (data.success) {
-        setProducts(data.products || [])
+        // Ensure products is always an array
+        const productsData = Array.isArray(data.products) ? data.products : []
+        setProducts(productsData)
         setBalance(data.balance || 0)
         setSelectedProducts(new Set())
-        setMessage({ type: 'success', text: `Ditemukan ${data.total} produk dari Digiflazz` })
+        setMessage({ type: 'success', text: `Ditemukan ${data.total || productsData.length} produk dari Digiflazz` })
       } else {
         setMessage({ type: 'error', text: data.message || 'Gagal mengambil produk' })
         setProducts([])
+
+        // Show retry countdown for rate limit
+        if (data.error === 'RATE_LIMIT' && data.retryAfter) {
+          const minutes = Math.ceil(data.retryAfter / 60)
+          setMessage({
+            type: 'error',
+            text: `Terlalu banyak request. Mohon tunggu ${minutes} menit dan coba lagi.`
+          })
+        }
       }
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message })
+      console.error('Error fetching products:', err)
+      setMessage({ type: 'error', text: 'Terjadi kesalahan saat mengambil produk' })
       setProducts([])
     } finally {
       setLoading(false)
@@ -97,6 +133,14 @@ export default function DigiflazzSyncPage() {
     setMessage(null)
 
     try {
+      // Build headers with auth token
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const productsToSync = products
         .filter(p => selectedProducts.has(p.sku_code))
         .map(p => ({
@@ -109,7 +153,7 @@ export default function DigiflazzSyncPage() {
 
       const response = await fetch('/api/admin/digiflazz/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           products: productsToSync,
           gameId: selectedGame,

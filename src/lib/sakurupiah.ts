@@ -3,7 +3,7 @@
  * Documentation: https://sakurupiah.id/developers/api-dokumentasi
  */
 
-const crypto = require('crypto')
+import * as crypto from 'node:crypto'
 
 const API_URL = process.env.SAKURUPIAH_API_URL || 'https://sakurupiah.id/api'
 const API_ID = process.env.SAKURUPIAH_API_ID || ''

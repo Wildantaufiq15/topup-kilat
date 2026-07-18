@@ -13,6 +13,7 @@ import {
 import { formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
+import { useAuth } from '@/context/AuthContext'
 
 interface User {
   id: string
@@ -32,6 +33,7 @@ interface User {
 type RoleFilter = 'ALL' | 'USER' | 'CS' | 'FINANCE' | 'ADMIN' | 'SUPER_ADMIN'
 
 export default function UsersPage() {
+  const { session } = useAuth()
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -41,19 +43,30 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers()
-  }, [])
+  }, [session])
 
   const fetchUsers = async () => {
     setIsLoading(true)
     try {
+      // Build headers with auth token
+      const headers: HeadersInit = {}
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       // Fetch users via API
-      const response = await fetch('/api/admin/users')
+      const response = await fetch('/api/admin/users', { headers })
       const result = await response.json()
 
-      if (!result.success) throw new Error(result.message)
+      if (!result.success) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Tidak memiliki akses ke data users')
+        }
+        throw new Error(result.message || 'Gagal memuat data')
+      }
 
       // Get orders count for each user via API
-      const ordersResponse = await fetch('/api/admin/orders')
+      const ordersResponse = await fetch('/api/admin/orders', { headers })
       const ordersResult = await ordersResponse.json()
       const orders = ordersResult.data || []
 
@@ -72,8 +85,9 @@ export default function UsersPage() {
       }))
 
       setUsers(usersWithCounts)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching users:', error)
+      toast.error(error.message || 'Gagal memuat data users')
     } finally {
       setIsLoading(false)
     }
@@ -81,9 +95,16 @@ export default function UsersPage() {
 
   const handleToggleActive = async (user: User) => {
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch('/api/admin/users', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           id: user.id,
           is_active: !user.is_active,
@@ -93,17 +114,24 @@ export default function UsersPage() {
       if (!result.success) throw new Error(result.message)
       toast.success(`User ${user.is_active ? 'dinonaktifkan' : 'diaktifkan'}`)
       fetchUsers()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error toggling user:', error)
-      toast.error('Gagal update status')
+      toast.error(error.message || 'Gagal update status')
     }
   }
 
   const handleUpdateRole = async (userId: string, newRole: User['role']) => {
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch('/api/admin/users', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           id: userId,
           role: newRole,
@@ -115,9 +143,9 @@ export default function UsersPage() {
       setShowEditModal(false)
       setSelectedUser(null)
       fetchUsers()
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating role:', error)
-      toast.error('Gagal update role')
+      toast.error(error.message || 'Gagal update role')
     }
   }
 

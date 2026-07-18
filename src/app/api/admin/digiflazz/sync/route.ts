@@ -2,10 +2,13 @@
  * Digiflazz Product Sync API
  *
  * Imports products from Digiflazz to our database
+ * Requires admin authentication
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { clearPriceListCache } from '@/lib/digiflazz'
+import { verifyAdminAuth } from '@/lib/admin-auth'
 
 interface SyncProduct {
   sku_code: string
@@ -27,6 +30,15 @@ export async function POST(request: NextRequest) {
   const requestId = `sync-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
 
   try {
+    // Verify admin authentication
+    const auth = await verifyAdminAuth(request)
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, message: auth.error || 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const body: SyncRequest = await request.json()
     const { products, gameId, margin, updateExisting } = body
 
@@ -143,6 +155,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[${requestId}] Sync complete:`, results)
+
+    // Clear the price list cache after sync to ensure fresh data
+    clearPriceListCache()
 
     return NextResponse.json({
       success: true,

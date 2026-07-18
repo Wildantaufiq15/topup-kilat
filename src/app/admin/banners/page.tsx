@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext'
 
 interface Banner {
   id: string
@@ -54,6 +55,7 @@ const defaultFormData: BannerFormData = {
 }
 
 export default function AdminBannersPage() {
+  const { session } = useAuth()
   const [banners, setBanners] = useState<Banner[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -65,25 +67,37 @@ export default function AdminBannersPage() {
 
   useEffect(() => {
     fetchBanners()
-  }, [])
+  }, [session])
 
   const fetchBanners = async () => {
     setIsLoading(true)
     try {
+      // Build headers with auth token
+      const headers: HeadersInit = {}
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       // Use admin API route
-      const response = await fetch('/api/admin/promos')
+      const response = await fetch('/api/admin/promos', { headers })
       const result = await response.json()
 
-      if (!result.success) throw new Error(result.message)
+      if (!result.success) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Tidak memiliki akses ke data banner')
+        }
+        throw new Error(result.message || 'Gagal memuat data')
+      }
       setBanners(result.data || [])
     } catch (err: any) {
       console.error('Error fetching banners:', err)
+      setError(err.message)
       // Fallback to api if admin route fails
       try {
         const data = await api.getAllBanners()
         setBanners(data || [])
       } catch (fallbackErr) {
-        setError(err.message)
+        // Ignore fallback error, primary error is shown
       }
     } finally {
       setIsLoading(false)
@@ -149,6 +163,14 @@ export default function AdminBannersPage() {
       if (!formData.title.trim()) throw new Error('Judul banner harus diisi')
       if (!formData.image) throw new Error('Gambar banner harus diisi')
 
+      // Build headers with auth token
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const payload = {
         title: formData.title,
         subtitle: formData.subtitle || null,
@@ -165,7 +187,7 @@ export default function AdminBannersPage() {
         // Update via API
         const response = await fetch('/api/admin/promos', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({ id: editingBanner.id, ...payload }),
         })
         const result = await response.json()
@@ -174,7 +196,7 @@ export default function AdminBannersPage() {
         // Create via API
         const response = await fetch('/api/admin/promos', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(payload),
         })
         const result = await response.json()
@@ -194,8 +216,15 @@ export default function AdminBannersPage() {
     if (!confirm('Apakah Anda yakin ingin menghapus banner ini?')) return
 
     try {
+      // Build headers with auth token
+      const headers: HeadersInit = {}
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch(`/api/admin/promos?id=${id}`, {
         method: 'DELETE',
+        headers,
       })
       const result = await response.json()
       if (!result.success) throw new Error(result.message)
@@ -207,9 +236,17 @@ export default function AdminBannersPage() {
 
   const handleToggleActive = async (banner: Banner) => {
     try {
+      // Build headers with auth token
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch('/api/admin/promos', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           id: banner.id,
           is_active: !banner.is_active,

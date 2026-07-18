@@ -103,6 +103,10 @@ export type Database = {
           sort_order: number
           created_at: string
           updated_at: string
+          price_base: number | null
+          price_display: number | null
+          buyer_sku_code: string | null
+          is_best_seller: boolean
         }
         Insert: Omit<Database['public']['Tables']['game_products']['Row'], 'id' | 'created_at' | 'updated_at'>
         Update: Partial<Database['public']['Tables']['game_products']['Insert']>

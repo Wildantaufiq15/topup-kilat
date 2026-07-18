@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { verifyAdminAuth } from '@/lib/admin-auth'
 
 // GET /api/admin/users - Get all users
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const auth = await verifyAdminAuth(request)
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, message: auth.error || 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const { data, error } = await supabaseAdmin
       .from('users')
       .select('*')
@@ -21,6 +31,15 @@ export async function GET() {
 // PUT /api/admin/users - Update user
 export async function PUT(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const auth = await verifyAdminAuth(request)
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, message: auth.error || 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const { id, ...updates } = await request.json()
 
     if (!id) {

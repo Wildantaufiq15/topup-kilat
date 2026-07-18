@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { verifyAdminAuth } from '@/lib/admin-auth'
 
 // GET /api/admin/orders - Get all orders
 export async function GET(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const auth = await verifyAdminAuth(request)
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, message: auth.error || 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '500')
 
@@ -30,6 +40,15 @@ export async function GET(request: NextRequest) {
 // PUT /api/admin/orders - Update order status
 export async function PUT(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const auth = await verifyAdminAuth(request)
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, message: auth.error || 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const { orderId, status } = await request.json()
 
     if (!orderId || !status) {

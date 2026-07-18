@@ -16,6 +16,7 @@ import {
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { toast } from '@/components/ui/Toast'
+import { useAuth } from '@/context/AuthContext'
 
 interface Voucher {
   id: string
@@ -36,6 +37,7 @@ interface Voucher {
 }
 
 export default function VouchersPage() {
+  const { session } = useAuth()
   const [vouchers, setVouchers] = useState<Voucher[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -45,18 +47,30 @@ export default function VouchersPage() {
 
   useEffect(() => {
     fetchVouchers()
-  }, [])
+  }, [session])
 
   const fetchVouchers = async () => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/admin/vouchers')
+      const headers: HeadersInit = {}
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
+      const response = await fetch('/api/admin/vouchers', { headers })
       const result = await response.json()
 
-      if (!result.success) throw new Error(result.message)
+      if (!result.success) {
+        if (response.status === 401 || response.status === 403) {
+          toast.error('Tidak memiliki akses ke data voucher')
+          return
+        }
+        throw new Error(result.message || 'Gagal memuat data')
+      }
       setVouchers(result.data || [])
     } catch (error) {
       console.error('Error fetching vouchers:', error)
+      toast.error('Gagal memuat data voucher')
     } finally {
       setIsLoading(false)
     }
@@ -64,11 +78,18 @@ export default function VouchersPage() {
 
   const handleSaveVoucher = async (voucherData: Partial<Voucher>) => {
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       if (editingVoucher) {
         // Update via API
         const response = await fetch('/api/admin/vouchers', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({ id: editingVoucher.id, ...voucherData }),
         })
         const result = await response.json()
@@ -78,7 +99,7 @@ export default function VouchersPage() {
         // Create via API
         const response = await fetch('/api/admin/vouchers', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(voucherData),
         })
         const result = await response.json()
@@ -98,8 +119,14 @@ export default function VouchersPage() {
     if (!confirm('Yakin ingin menghapus voucher ini?')) return
 
     try {
+      const headers: HeadersInit = {}
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch(`/api/admin/vouchers?id=${voucherId}`, {
         method: 'DELETE',
+        headers,
       })
       const result = await response.json()
       if (!result.success) throw new Error(result.message)
@@ -113,9 +140,16 @@ export default function VouchersPage() {
 
   const handleToggleActive = async (voucher: Voucher) => {
     try {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
       const response = await fetch('/api/admin/vouchers', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           id: voucher.id,
           is_active: !voucher.is_active,

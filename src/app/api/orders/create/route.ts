@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
     // =====================================================
     const { data: game, error: gameError } = await supabaseAdmin
       .from('games')
-      .select('id, name, slug')
+      .select('id, name, slug, requires_server_id')
       .eq('slug', gameSlug)
       .maybeSingle()
 
@@ -174,6 +174,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, message: 'Game not found' },
         { status: 404 }
+      )
+    }
+
+    // =====================================================
+    // STEP 2b: Validate server_id requirement
+    // =====================================================
+    // SECURITY: Check server_id requirement on server-side (not just frontend)
+    if (game.requires_server_id && !serverId) {
+      console.warn(`[${requestId}] Server ID required but not provided for game: ${gameSlug}`)
+      return NextResponse.json(
+        { success: false, message: 'Server ID diperlukan untuk game ini. Silakan masukkan Server ID.' },
+        { status: 400 }
       )
     }
 
@@ -290,15 +302,21 @@ export async function POST(request: NextRequest) {
 
     // =====================================================
     // STEP 8: Increment voucher usage if applied
+    // Uses atomic RPC function that checks limit before incrementing
     // =====================================================
     if (voucherId) {
-      const { error: updateError } = await supabaseAdmin.rpc('increment_voucher_usage', {
+      const { data: incrementResult, error: incrementError } = await supabaseAdmin.rpc('increment_voucher_usage', {
         voucher_id: voucherId,
       })
 
-      if (updateError) {
-        console.error(`[${requestId}] Failed to increment voucher usage:`, updateError)
+      if (incrementError) {
+        console.error(`[${requestId}] Failed to increment voucher usage:`, incrementError)
         // Don't fail the order, just log the error
+      } else if (incrementResult === 0) {
+        console.warn(`[${requestId}] Voucher usage increment returned 0 - limit may have been reached`)
+        // The voucher discount was already applied to the order, so this is just a monitoring issue
+      } else {
+        console.log(`[${requestId}] Voucher usage incremented successfully`)
       }
     }
 

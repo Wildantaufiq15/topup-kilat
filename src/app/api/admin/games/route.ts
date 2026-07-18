@@ -1,13 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { verifyAdminAuth } from '@/lib/admin-auth'
 
-// GET /api/admin/games - Get all games
-export async function GET() {
+// GET /api/admin/games - Get all games (requires auth)
+export async function GET(request: NextRequest) {
   try {
-    const { data, error } = await supabaseAdmin
+    // Verify admin authentication
+    const auth = await verifyAdminAuth(request)
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, message: auth.error || 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    // Get query params for filtering
+    const { searchParams } = new URL(request.url)
+    const includeInactive = searchParams.get('includeInactive') === 'true'
+
+    let query = supabaseAdmin
       .from('games')
       .select('*')
       .order('sort_order')
+
+    if (!includeInactive) {
+      query = query.eq('is_active', true)
+    }
+
+    const { data, error } = await query
 
     if (error) throw error
 
@@ -21,6 +41,15 @@ export async function GET() {
 // POST /api/admin/games - Create game
 export async function POST(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const auth = await verifyAdminAuth(request)
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, message: auth.error || 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     const { data, error } = await supabaseAdmin
       .from('games')
@@ -40,6 +69,15 @@ export async function POST(request: NextRequest) {
 // PUT /api/admin/games - Update game
 export async function PUT(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const auth = await verifyAdminAuth(request)
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, message: auth.error || 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const { id, ...updates } = await request.json()
 
     if (!id) {
@@ -65,6 +103,15 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/admin/games - Delete game
 export async function DELETE(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const auth = await verifyAdminAuth(request)
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, message: auth.error || 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 

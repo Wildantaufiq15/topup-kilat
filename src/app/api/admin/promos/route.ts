@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { verifyAdminAuth } from '@/lib/admin-auth'
 
-// GET /api/admin/promos - Get all promos
-export async function GET() {
+// GET /api/admin/promos - Get all promos (requires auth)
+export async function GET(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const auth = await verifyAdminAuth(request)
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, message: auth.error || 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const { data, error } = await supabaseAdmin
       .from('promos')
       .select('*')
@@ -21,6 +31,15 @@ export async function GET() {
 // POST /api/admin/promos - Create promo
 export async function POST(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const auth = await verifyAdminAuth(request)
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, message: auth.error || 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     const { data, error } = await supabaseAdmin
       .from('promos')
@@ -40,6 +59,15 @@ export async function POST(request: NextRequest) {
 // PUT /api/admin/promos - Update promo
 export async function PUT(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const auth = await verifyAdminAuth(request)
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, message: auth.error || 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const { id, ...updates } = await request.json()
 
     if (!id) {
@@ -65,6 +93,15 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/admin/promos - Delete promo
 export async function DELETE(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const auth = await verifyAdminAuth(request)
+    if (!auth.success) {
+      return NextResponse.json(
+        { success: false, message: auth.error || 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 

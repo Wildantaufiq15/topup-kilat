@@ -77,8 +77,64 @@ interface FulfillmentResult {
 }
 
 /**
- * Check if callback was already processed (idempotency)
- * Returns true if callback exists in log with same status
+ * Try to acquire idempotency lock by inserting into callback log
+ * Returns true if lock acquired (first request), false if already exists (duplicate)
+ *
+ * This prevents race condition where two callbacks arrive simultaneously,
+ * both check "not processed", and both proceed to update.
+ *
+ * Pattern: "Try Insert First" instead of "Check Then Insert"
+ */
+async function tryAcquireCallbackLock(
+  trxId: string,
+  merchantRef: string | null,
+  eventType: string,
+  status: string
+): Promise<{ acquired: boolean; existingId?: string }> {
+  // Try to insert - if unique constraint violation, another request got here first
+  const { data, error } = await supabaseAdmin
+    .from('payment_callback_log')
+    .insert({
+      trx_id: trxId,
+      merchant_ref: merchantRef,
+      event_type: eventType,
+      status: status,
+      raw_payload: { placeholder: true }, // Will be updated later
+      signature: null,
+    })
+    .select('id')
+    .single()
+
+  if (error) {
+    // Check if it's a unique constraint violation (already exists)
+    if (error.code === '23505') { // PostgreSQL unique violation
+      console.log(`[Callback Lock] Duplicate callback detected for trx_id: ${trxId}`)
+      return { acquired: false }
+    }
+    // Other error - log and continue
+    console.error('Error acquiring callback lock:', error)
+    return { acquired: false }
+  }
+
+  return { acquired: true, existingId: data?.id }
+}
+
+/**
+ * Update the raw_payload after successful processing
+ */
+async function updateCallbackLogPayload(logId: string, rawPayload: object, signature: string | null): Promise<void> {
+  await supabaseAdmin
+    .from('payment_callback_log')
+    .update({
+      raw_payload: rawPayload,
+      signature: signature,
+    })
+    .eq('id', logId)
+}
+
+/**
+ * Legacy check for existing callback (fallback)
+ * Kept for backward compatibility
  */
 async function isCallbackProcessed(
   trxId: string,
@@ -100,7 +156,7 @@ async function isCallbackProcessed(
 }
 
 /**
- * Log processed callback to prevent duplicate processing
+ * Legacy log function (kept for reference)
  */
 async function logCallback(
   trxId: string,
@@ -200,12 +256,22 @@ async function processFulfillment(
       .eq('id', orderData.id)
 
     // Update order status based on fulfillment
-    if (!isSuccess && !isPending) {
+    if (isSuccess) {
+      // Fulfillment successful - update order status to SUCCESS
+      await supabaseAdmin
+        .from('orders')
+        .update({ status: 'SUCCESS' })
+        .eq('id', orderData.id)
+      console.log(`[${requestId}] ✅ Order status updated to SUCCESS`)
+    } else if (!isPending) {
+      // Fulfillment failed (not just pending) - update order status to FAILED
       await supabaseAdmin
         .from('orders')
         .update({ status: 'FAILED' })
         .eq('id', orderData.id)
+      console.log(`[${requestId}] ❌ Order status updated to FAILED`)
     }
+    // If fulfillment is pending, keep order status at PAID until further update
 
     return {
       success: isSuccess,
@@ -322,18 +388,27 @@ export async function POST(request: NextRequest) {
 
     console.log(`[${requestId}] ✅ Signature verified successfully`)
 
-    // IDEMPOTENCY CHECK: Skip if callback already processed with same status
+    // RACE CONDITION PREVENTION: Try to acquire lock BEFORE processing
+    // This prevents duplicate processing if two callbacks arrive simultaneously
+    // Pattern: "Try Insert First" instead of "Check Then Insert"
+    let callbackLockId: string | null = null
     if (trx_id) {
-      const { processed, data: existingLog } = await isCallbackProcessed(trx_id, status)
-      if (processed) {
-        console.log(`[${requestId}] ⏭️ Callback already processed (idempotent), skipping...`)
-        console.log(`[${requestId}] Existing log:`, existingLog)
+      const lockResult = await tryAcquireCallbackLock(
+        trx_id,
+        merchant_ref || null,
+        callbackEvent || 'payment_status',
+        status
+      )
+      if (!lockResult.acquired) {
+        console.log(`[${requestId}] ⏭️ Duplicate callback detected (race condition prevented), skipping...`)
         return NextResponse.json({
           success: true,
           message: 'Callback already processed',
           idempotent: true,
         })
       }
+      callbackLockId = lockResult.existingId || null
+      console.log(`[${requestId}] 🔒 Idempotency lock acquired for trx_id: ${trx_id}`)
     }
 
     // Only process payment_status events
@@ -532,17 +607,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // LOG SUCCESS: Record callback to prevent duplicate processing
-    if (trx_id) {
-      await logCallback(
-        trx_id,
-        merchant_ref || null,
-        callbackEvent || 'payment_status',
-        status,
-        data,
-        signature || null
-      )
-      console.log(`[${requestId}] ✅ Callback logged for idempotency`)
+    // UPDATE CALLBACK LOG: Complete the idempotency record with actual payload
+    // We already acquired the lock at the start, now update with real data
+    if (trx_id && callbackLockId) {
+      try {
+        await updateCallbackLogPayload(callbackLockId, data, signature || null)
+        console.log(`[${requestId}] ✅ Callback log updated with payload`)
+      } catch (updateError) {
+        console.error(`[${requestId}] ⚠️ Failed to update callback log:`, updateError)
+        // Don't fail - the lock was acquired, so duplicate won't be processed anyway
+      }
     }
 
     console.log(`[${requestId}] === Callback processing complete ===`)

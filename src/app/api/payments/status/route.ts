@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { checkTransactionStatus } from '@/lib/sakurupiah'
+import { apiRateLimiter, getClientIP } from '@/lib/ratelimit'
 
 // Server-side Supabase client
 const supabase = createClient(
@@ -9,6 +10,33 @@ const supabase = createClient(
 )
 
 export async function GET(request: NextRequest) {
+  const requestId = `paystatus-${Date.now()}`
+
+  // Rate limiting check (prevent polling abuse)
+  if (apiRateLimiter) {
+    const clientIP = getClientIP(request)
+    const { success, remaining, limit } = await apiRateLimiter.limit(clientIP)
+
+    if (!success) {
+      console.log(`[${requestId}] Rate limit exceeded for IP:`, clientIP)
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Terlalu banyak request. Silakan tunggu beberapa menit.',
+          error: 'RATE_LIMIT',
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': String(limit),
+            'X-RateLimit-Remaining': String(remaining),
+            'Retry-After': '60',
+          },
+        }
+      )
+    }
+  }
+
   try {
     const searchParams = request.nextUrl.searchParams
     const paymentId = searchParams.get('paymentId')
